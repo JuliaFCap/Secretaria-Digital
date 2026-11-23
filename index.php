@@ -22,18 +22,19 @@
 ?>
 <div class="row g-4 align-items-stretch">
     <div class="col-lg-7">
-        <div class="cartao h-100 d-flex flex-column justify-content-center">
-            <span class="text-uppercase fw-semibold small" style="color: var(--vinho); letter-spacing: .08em;">FATEC Araraquara</span>
-            <h1 class="display-6 mt-2">Secretaria Digital</h1>
-            <p class="lead text-secondary mb-4">Abra requerimentos, acompanhe o andamento, tire declarações na hora e tire dúvidas sem precisar ir até o balcão.</p>
+        <div class="destaque h-100 d-flex flex-column justify-content-center">
+            <span><span class="selo">Atendimento da Secretaria Acadêmica</span></span>
+            <h1 class="mt-3">Secretaria Digital</h1>
+            <p class="lead text-secondary mb-4">Abra requerimentos, acompanhe o andamento, envie os documentos do estágio, tire declarações na hora e consulte as dúvidas frequentes sem precisar ir até o balcão.</p>
             <div class="d-flex flex-wrap gap-2">
-                <a href="faq.php" class="btn btn-contorno">Ver dúvidas frequentes</a>
-                <a href="validar.php" class="btn btn-contorno">Validar uma declaração</a>
+                <a href="faq.php" class="btn btn-contorno">Dúvidas frequentes</a>
+                <a href="estagio_guia.php" class="btn btn-contorno">Guia do estágio</a>
+                <a href="validar.php" class="btn btn-contorno">Validar declaração</a>
             </div>
         </div>
     </div>
     <div class="col-lg-5" id="entrar">
-        <div class="cartao">
+        <div class="cartao cartao-destaque">
             <h2 class="h4 mb-3">Entrar</h2>
             <form action="login.php" method="post">
                 <div class="mb-3">

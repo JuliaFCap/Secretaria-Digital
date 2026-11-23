@@ -4,6 +4,20 @@
     require_once("funcoes.php");
     verifica_login();
     $nivel = $_SESSION['nivel'];
+    // tabela dos documentos de estágio aguardando avaliação
+    function lista_docs_estagio($docs){
+        $html = "<h2 class='h4'>Documentos de estágio para avaliar</h2>";
+        if(count($docs) == 0){
+            return $html . "<p class='text-secondary'>Nenhum documento aguardando avaliação.</p>";
+        }
+        $html .= "<div class='tabela mb-4'><table class='table align-middle'><tr><th>Aluno</th><th>Documento</th><th>Empresa</th><th>Enviado em</th><th></th></tr>";
+        foreach($docs as $d){
+            $html .= "<tr><td>" . seguro($d['aluno']) . "</td><td>" . seguro($d['etapa']) . "</td><td>" . seguro($d['empresa']) . "</td>
+                      <td>" . data_br($d['criado_em'], true) . "</td>
+                      <td><a class='btn btn-sm btn-principal' href='estagio_ver.php?id=" . (int)$d['id_estagio'] . "'>Avaliar</a></td></tr>";
+        }
+        return $html . "</table></div>";
+    }
     $id = $_SESSION['id_usuario'];
 
     // notificações do usuário (as 10 mais recentes)
@@ -56,6 +70,36 @@
         $declaracoes_mes = mysqli_fetch_assoc(mysqli_query($con, $sql))['qtd'];
     }
 
+    // estágio: o do aluno, ou os documentos esperando avaliação (coordenação vê só o seu curso)
+    $meu_estagio = null;
+    $docs_estagio = array();
+    if($nivel == "aluno"){
+        $sql = "SELECT id_estagio, empresa,
+                       (SELECT COUNT(*) FROM tb_entregas en WHERE en.id_estagio = e.id_estagio AND en.status = 'correcao'
+                        AND en.id_entrega = (SELECT MAX(x.id_entrega) FROM tb_entregas x WHERE x.id_estagio = en.id_estagio AND x.id_etapa = en.id_etapa)) AS correcoes
+                FROM tb_estagios e WHERE id_aluno = ? AND situacao = 'em_andamento' ORDER BY id_estagio DESC LIMIT 1";
+        $stmt = mysqli_stmt_init($con);
+        mysqli_stmt_prepare($stmt, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $id);
+        mysqli_stmt_execute($stmt);
+        $meu_estagio = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    }
+    else{
+        $curso_filtro = ($nivel == "coordenacao") ? (int)$_SESSION['id_curso'] : 0;
+        $sql = "SELECT en.id_entrega, en.criado_em, t.nome AS etapa, e.id_estagio, e.empresa, u.nome AS aluno
+                FROM tb_entregas en
+                INNER JOIN tb_etapas t ON t.id_etapa = en.id_etapa
+                INNER JOIN tb_estagios e ON e.id_estagio = en.id_estagio
+                INNER JOIN tb_usuarios u ON u.id_usuario = e.id_aluno
+                WHERE en.status = 'enviado' AND (? = 0 OR u.id_curso = ?)
+                ORDER BY en.criado_em ASC LIMIT 20";
+        $stmt = mysqli_stmt_init($con);
+        mysqli_stmt_prepare($stmt, $sql);
+        mysqli_stmt_bind_param($stmt, "ii", $curso_filtro, $curso_filtro);
+        mysqli_stmt_execute($stmt);
+        $docs_estagio = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+    }
+
     // marca as notificações como lidas depois de carregar
     $sql = "UPDATE tb_notificacoes SET lida = 1 WHERE id_usuario = ? AND lida = 0";
     $stmt = mysqli_stmt_init($con);
@@ -72,9 +116,26 @@
 <?php if($nivel == "aluno"){ ?>
     <div class="row g-3 mb-4">
         <div class="col-md-4"><a class="atalho atalho-principal" href="chamado_add.php"><strong>+ Nova solicitação</strong><span>Requerimentos que precisam de análise</span></a></div>
+        <div class="col-md-4"><a class="atalho" href="estagio_lista.php"><strong>Meu estágio</strong><span>Envie os documentos e acompanhe a aprovação</span></a></div>
         <div class="col-md-4"><a class="atalho" href="declaracao_lista.php"><strong>Declarações</strong><span>Matrícula e frequência na hora, com QR Code</span></a></div>
-        <div class="col-md-4"><a class="atalho" href="faq.php"><strong>Dúvidas frequentes</strong><span>Talvez sua resposta já esteja aqui</span></a></div>
     </div>
+    <?php
+        if($meu_estagio){
+            $p = progresso_estagio($con, $meu_estagio['id_estagio']);
+            $pct = $p['total'] > 0 ? round($p['aprovadas'] / $p['total'] * 100) : 0;
+            echo "<div class='cartao mb-4'>
+                    <div class='d-flex flex-wrap justify-content-between gap-2 mb-2'>
+                        <h2 class='h5 mb-0'>Estágio · " . seguro($meu_estagio['empresa']) . "</h2>
+                        <a href='estagio_ver.php?id=" . $meu_estagio['id_estagio'] . "' class='btn btn-sm btn-contorno'>Ver documentos</a>
+                    </div>
+                    <div class='progress mb-1' role='progressbar' aria-label='Documentos aprovados' aria-valuenow='$pct' aria-valuemin='0' aria-valuemax='100'><div class='progress-bar' style='width: $pct%'></div></div>
+                    <small>" . $p['aprovadas'] . " de " . $p['total'] . " documentos obrigatórios aprovados</small>";
+            if($meu_estagio['correcoes'] > 0){
+                echo "<div class='alert alert-danger small py-2 mt-2 mb-0'>" . $meu_estagio['correcoes'] . " documento(s) com correção pedida. Reenvie pela página do estágio.</div>";
+            }
+            echo "</div>";
+        }
+    ?>
     <h2 class="h4">Chamados em andamento</h2>
     <?php if(count($chamados) == 0){ ?>
         <p class="text-secondary">Você não tem chamados em andamento.</p>
@@ -120,6 +181,8 @@
     </div>
     <?php } ?>
 
+    <?php echo lista_docs_estagio($docs_estagio); ?>
+
 <?php } else { ?>
     <?php if($enviados > 0){ echo "<div class='alert alert-warning'>$enviados lembrete(s) automático(s) enviado(s) a alunos com chamados parados.</div>"; } ?>
     <div class="row g-3 mb-4">
@@ -127,13 +190,16 @@
         <div class="col-6 col-lg"><div class="cartao" style="border-color:#F3B4B4"><div class="rotulo text-danger fw-semibold">Atrasados</div><div class="numero text-danger"><?php echo (int)$numeros['atrasados']; ?></div></div></div>
         <div class="col-6 col-lg"><div class="cartao"><div class="rotulo">Aguardando aluno</div><div class="numero"><?php echo (int)$numeros['aguardando']; ?></div></div></div>
         <div class="col-6 col-lg"><div class="cartao"><div class="rotulo">Sem responsável</div><div class="numero"><?php echo (int)$numeros['sem_responsavel']; ?></div></div></div>
+        <div class="col-6 col-lg"><div class="cartao"><div class="rotulo">Docs. de estágio</div><div class="numero"><?php echo count($docs_estagio); ?></div></div></div>
         <div class="col-6 col-lg"><div class="cartao"><div class="rotulo">Declarações no mês</div><div class="numero"><?php echo (int)$declaracoes_mes; ?></div></div></div>
     </div>
     <div class="row g-3 mb-4">
-        <div class="col-md-4"><a class="atalho atalho-principal" href="kanban.php"><strong>Abrir o kanban</strong><span>Fila de chamados por status</span></a></div>
-        <div class="col-md-4"><a class="atalho" href="relatorios.php"><strong>Relatórios</strong><span>Chamados por status, tipo, curso e atrasados</span></a></div>
-        <div class="col-md-4"><a class="atalho" href="aviso_lista.php"><strong>Mural de avisos</strong><span>Publicar avisos com imagem</span></a></div>
+        <div class="col-md-6 col-lg-3"><a class="atalho atalho-principal" href="kanban.php"><strong>Abrir o kanban</strong><span>Fila de chamados por status</span></a></div>
+        <div class="col-md-6 col-lg-3"><a class="atalho" href="estagio_lista.php"><strong>Estágios</strong><span>Documentos enviados pelos alunos</span></a></div>
+        <div class="col-md-6 col-lg-3"><a class="atalho" href="chat.php"><strong>Chat da equipe</strong><span>Conversa com secretaria e coordenação</span></a></div>
+        <div class="col-md-6 col-lg-3"><a class="atalho" href="relatorios.php"><strong>Relatórios</strong><span>Chamados, estágios, cursos e atrasos</span></a></div>
     </div>
+    <?php echo lista_docs_estagio($docs_estagio); ?>
 <?php } ?>
 
 <h2 class="h4" id="notificacoes">Notificações</h2>

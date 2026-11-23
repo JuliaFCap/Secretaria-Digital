@@ -273,6 +273,99 @@ CREATE TABLE tb_auditoria (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Estágio: etapas/documentos exigidos (cadastrados pela secretaria)
+-- modelo: arquivo para o aluno baixar (pasta uploads/modelos/), pode ser NULL
+-- prazo_dias: dias, contados do início do estágio, para entregar o documento
+-- ---------------------------------------------------------------------
+CREATE TABLE tb_etapas (
+  id_etapa      INT AUTO_INCREMENT PRIMARY KEY,
+  nome          VARCHAR(120) NOT NULL,
+  descricao     TEXT         NULL,
+  ordem         SMALLINT     NOT NULL DEFAULT 1,
+  prazo_dias    SMALLINT     NULL,
+  obrigatoria   TINYINT(1)   NOT NULL DEFAULT 1,
+  modelo        VARCHAR(255) NULL,
+  modelo_nome   VARCHAR(255) NULL,
+  ativo         TINYINT(1)   NOT NULL DEFAULT 1,
+  criado_em     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Estágio de cada aluno (dados da empresa e do período)
+-- situacao: em_andamento | concluido | cancelado
+-- ---------------------------------------------------------------------
+CREATE TABLE tb_estagios (
+  id_estagio     INT AUTO_INCREMENT PRIMARY KEY,
+  id_aluno       INT          NOT NULL,
+  empresa        VARCHAR(150) NOT NULL,
+  cnpj           VARCHAR(20)  NULL,
+  supervisor     VARCHAR(120) NOT NULL,
+  email_supervisor VARCHAR(120) NULL,
+  area           VARCHAR(120) NULL,
+  horas_semana   TINYINT      NOT NULL,
+  data_inicio    DATE         NOT NULL,
+  data_fim       DATE         NOT NULL,
+  situacao       ENUM('em_andamento','concluido','cancelado') NOT NULL DEFAULT 'em_andamento',
+  criado_em      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_estagios_aluno FOREIGN KEY (id_aluno)
+    REFERENCES tb_usuarios (id_usuario),
+  CONSTRAINT ck_estagios_datas CHECK (data_fim >= data_inicio)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Documentos de estágio enviados pelo aluno e a avaliação de cada um
+-- status: enviado (aguardando análise) | aprovado | correcao
+-- arquivo: nome gerado na pasta uploads/estagio/ (bloqueada, entregue por estagio_arquivo.php)
+-- ---------------------------------------------------------------------
+CREATE TABLE tb_entregas (
+  id_entrega     INT AUTO_INCREMENT PRIMARY KEY,
+  id_estagio     INT          NOT NULL,
+  id_etapa       INT          NOT NULL,
+  arquivo        VARCHAR(255) NOT NULL,
+  nome_original  VARCHAR(255) NOT NULL,
+  tamanho        INT          NOT NULL,
+  status         ENUM('enviado','aprovado','correcao') NOT NULL DEFAULT 'enviado',
+  observacao     VARCHAR(500) NULL,
+  id_avaliador   INT          NULL,
+  avaliado_em    DATETIME     NULL,
+  criado_em      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_entregas_status (status),
+  CONSTRAINT fk_entregas_estagio FOREIGN KEY (id_estagio)
+    REFERENCES tb_estagios (id_estagio) ON DELETE CASCADE,
+  CONSTRAINT fk_entregas_etapa FOREIGN KEY (id_etapa)
+    REFERENCES tb_etapas (id_etapa),
+  CONSTRAINT fk_entregas_avaliador FOREIGN KEY (id_avaliador)
+    REFERENCES tb_usuarios (id_usuario)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Chat interno da equipe (secretaria, coordenação, administração)
+-- id_destinatario NULL = mensagem no canal geral da equipe
+-- lida: usada nas conversas diretas
+-- ---------------------------------------------------------------------
+CREATE TABLE tb_chat (
+  id_chat          INT AUTO_INCREMENT PRIMARY KEY,
+  id_remetente     INT          NOT NULL,
+  id_destinatario  INT          NULL,
+  mensagem         VARCHAR(1000) NOT NULL,
+  lida             TINYINT(1)   NOT NULL DEFAULT 0,
+  criado_em        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_chat_conversa (id_destinatario, id_remetente),
+  CONSTRAINT fk_chat_remetente FOREIGN KEY (id_remetente)
+    REFERENCES tb_usuarios (id_usuario),
+  CONSTRAINT fk_chat_destinatario FOREIGN KEY (id_destinatario)
+    REFERENCES tb_usuarios (id_usuario)
+) ENGINE=InnoDB;
+
+-- Até qual mensagem do canal geral cada pessoa já leu
+CREATE TABLE tb_chat_geral_lido (
+  id_usuario   INT PRIMARY KEY,
+  ultimo_id    INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_chatlido_usuario FOREIGN KEY (id_usuario)
+    REFERENCES tb_usuarios (id_usuario)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Configurações do sistema (ex.: integração com o WhatsApp)
 -- preenchidas pelo admin na tela "Integração WhatsApp"
 -- ---------------------------------------------------------------------

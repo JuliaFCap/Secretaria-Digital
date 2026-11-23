@@ -469,6 +469,167 @@
         mysqli_stmt_execute($stmt);
     }
 
+    // ---------------------------------------------------------
+    // Estágio
+    // ---------------------------------------------------------
+
+    // Upload do modelo de documento (PDF, DOC ou DOCX até 2 MB) que o aluno vai baixar
+    function envia_modelo($campo, $pasta){
+        if(!isset($_FILES[$campo]) || $_FILES[$campo]['size'] == 0){
+            return null;
+        }
+        $tam = $_FILES[$campo]['size'];
+        $origem = $_FILES[$campo]['tmp_name'];
+        $tipo = mime_content_type($origem);
+        $ext = strtolower(pathinfo($_FILES[$campo]['name'], PATHINFO_EXTENSION));
+        $permitidos = array(
+            "pdf" => array("application/pdf"),
+            "doc" => array("application/msword", "application/CDFV2", "application/x-ole-storage"),
+            "docx" => array("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/zip", "application/octet-stream")
+        );
+        if($tam > (2*1024*1024)){
+            $_SESSION['erro'] = "Erro! Modelo muito grande (máximo 2 MB).";
+            return null;
+        }
+        if(!isset($permitidos[$ext]) || !in_array($tipo, $permitidos[$ext])){
+            $_SESSION['erro'] = "Erro! O modelo precisa ser PDF, DOC ou DOCX.";
+            return null;
+        }
+        $nomenovo = date("YmdHis") . "_" . bin2hex(random_bytes(6)) . "." . $ext;
+        if(!move_uploaded_file($origem, $pasta . $nomenovo)){
+            $_SESSION['erro'] = "Falha no upload do modelo.";
+            return null;
+        }
+        return array("arquivo" => $nomenovo, "original" => limpa(basename($_FILES[$campo]['name'])));
+    }
+
+    // Busca um estágio com os dados do aluno e do curso
+    function busca_estagio($con, $id){
+        $sql = "SELECT e.*, u.nome AS aluno, u.ra, u.email AS email_aluno, u.id_curso AS curso_aluno, c.sigla
+                FROM tb_estagios e
+                INNER JOIN tb_usuarios u ON u.id_usuario = e.id_aluno
+                LEFT JOIN tb_cursos c ON c.id_curso = u.id_curso
+                WHERE e.id_estagio = ? LIMIT 1";
+        $stmt = mysqli_stmt_init($con);
+        mysqli_stmt_prepare($stmt, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $id);
+        mysqli_stmt_execute($stmt);
+        return mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    }
+
+    // aluno -> só o próprio; coordenação -> só do seu curso; secretaria e admin -> todos
+    function pode_ver_estagio($estagio){
+        if($estagio == null){
+            return false;
+        }
+        $nivel = $_SESSION['nivel'];
+        if($nivel == "aluno"){
+            return $estagio['id_aluno'] == $_SESSION['id_usuario'];
+        }
+        if($nivel == "coordenacao"){
+            return $estagio['curso_aluno'] == $_SESSION['id_curso'];
+        }
+        return ($nivel == "secretaria" || $nivel == "admin");
+    }
+
+    // quem pode aprovar ou pedir correção dos documentos
+    function pode_avaliar_estagio($estagio){
+        return pode_ver_estagio($estagio) && in_array($_SESSION['nivel'], array("secretaria", "coordenacao"));
+    }
+
+    // Quantas etapas obrigatórias já foram aprovadas: array("aprovadas" => x, "total" => y)
+    function progresso_estagio($con, $id_estagio){
+        $sql = "SELECT COUNT(*) AS total,
+                       SUM(EXISTS(SELECT 1 FROM tb_entregas en
+                                  WHERE en.id_estagio = ? AND en.id_etapa = t.id_etapa AND en.status = 'aprovado')) AS aprovadas
+                FROM tb_etapas t WHERE t.ativo = 1 AND t.obrigatoria = 1";
+        $stmt = mysqli_stmt_init($con);
+        mysqli_stmt_prepare($stmt, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $id_estagio);
+        mysqli_stmt_execute($stmt);
+        $linha = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        return array("aprovadas" => (int)$linha['aprovadas'], "total" => (int)$linha['total']);
+    }
+
+    function nome_situacao_estagio($situacao){
+        $nomes = array("em_andamento" => "Em andamento", "concluido" => "Concluído", "cancelado" => "Cancelado");
+        return $nomes[$situacao] ?? $situacao;
+    }
+
+    function nome_status_entrega($status){
+        $nomes = array("pendente" => "Pendente", "enviado" => "Aguardando análise", "aprovado" => "Aprovado", "correcao" => "Correção pedida");
+        return $nomes[$status] ?? $status;
+    }
+
+    // ---------------------------------------------------------
+    // Chat interno da equipe
+    // ---------------------------------------------------------
+
+    // Total de mensagens não lidas: conversas diretas + canal geral
+    function chat_nao_lidas($con, $id_usuario){
+        $sql = "SELECT
+                  (SELECT COUNT(*) FROM tb_chat WHERE id_destinatario = ? AND lida = 0) +
+                  (SELECT COUNT(*) FROM tb_chat
+                   WHERE id_destinatario IS NULL AND id_remetente <> ?
+                   AND id_chat > COALESCE((SELECT ultimo_id FROM tb_chat_geral_lido WHERE id_usuario = ?), 0)) AS qtd";
+        $stmt = mysqli_stmt_init($con);
+        mysqli_stmt_prepare($stmt, $sql);
+        mysqli_stmt_bind_param($stmt, "iii", $id_usuario, $id_usuario, $id_usuario);
+        mysqli_stmt_execute($stmt);
+        return (int)mysqli_fetch_assoc(mysqli_stmt_get_result($stmt))['qtd'];
+    }
+
+    // Busca as mensagens de uma conversa (0 = canal geral) depois do id informado
+    function chat_mensagens($con, $id_usuario, $com, $depois){
+        if($com == 0){
+            $sql = "SELECT c.id_chat, c.id_remetente, c.mensagem, c.criado_em, u.nome, u.nivel
+                    FROM tb_chat c INNER JOIN tb_usuarios u ON u.id_usuario = c.id_remetente
+                    WHERE c.id_destinatario IS NULL AND c.id_chat > ?
+                    ORDER BY c.id_chat DESC LIMIT 100";
+            $stmt = mysqli_stmt_init($con);
+            mysqli_stmt_prepare($stmt, $sql);
+            mysqli_stmt_bind_param($stmt, "i", $depois);
+        }
+        else{
+            $sql = "SELECT c.id_chat, c.id_remetente, c.mensagem, c.criado_em, u.nome, u.nivel
+                    FROM tb_chat c INNER JOIN tb_usuarios u ON u.id_usuario = c.id_remetente
+                    WHERE ((c.id_remetente = ? AND c.id_destinatario = ?) OR (c.id_remetente = ? AND c.id_destinatario = ?))
+                    AND c.id_chat > ?
+                    ORDER BY c.id_chat DESC LIMIT 100";
+            $stmt = mysqli_stmt_init($con);
+            mysqli_stmt_prepare($stmt, $sql);
+            mysqli_stmt_bind_param($stmt, "iiiii", $id_usuario, $com, $com, $id_usuario, $depois);
+        }
+        mysqli_stmt_execute($stmt);
+        $lista = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+        return array_reverse($lista);//mais antigas primeiro
+    }
+
+    // Marca a conversa como lida para o usuário
+    function chat_marca_lida($con, $id_usuario, $com){
+        if($com == 0){
+            $sql = "INSERT INTO tb_chat_geral_lido (id_usuario, ultimo_id)
+                    SELECT ?, COALESCE(MAX(id_chat), 0) FROM tb_chat WHERE id_destinatario IS NULL
+                    ON DUPLICATE KEY UPDATE ultimo_id = VALUES(ultimo_id)";
+            $stmt = mysqli_stmt_init($con);
+            mysqli_stmt_prepare($stmt, $sql);
+            mysqli_stmt_bind_param($stmt, "i", $id_usuario);
+        }
+        else{
+            $sql = "UPDATE tb_chat SET lida = 1 WHERE id_remetente = ? AND id_destinatario = ? AND lida = 0";
+            $stmt = mysqli_stmt_init($con);
+            mysqli_stmt_prepare($stmt, $sql);
+            mysqli_stmt_bind_param($stmt, "ii", $com, $id_usuario);
+        }
+        mysqli_stmt_execute($stmt);
+    }
+
+    // Texto da mensagem com segurança: escapa o HTML e transforma "#15" em link para o chamado 15
+    function chat_formata($texto){
+        $seguro = nl2br(seguro($texto));
+        return preg_replace("/(?<!&)#(\d{1,9})\b/", "<a href='chamado_ver.php?id=$1'>#$1</a>", $seguro);
+    }
+
     // Upload de imagem (padrão da aula de upload): devolve o nome salvo ou "" em caso de erro
     function envia_imagem($campo, $pasta){
         if(!isset($_FILES[$campo]) || $_FILES[$campo]['size'] == 0){

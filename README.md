@@ -1,8 +1,8 @@
 # Secretaria Digital — FATEC Araraquara
 
-Central de atendimento e requerimentos da secretaria. O aluno abre solicitações, acompanha o andamento, tira declarações com QR Code e consulta a FAQ. A secretaria atende pelo kanban, a coordenação dá o parecer e a administração cadastra tudo e acompanha os relatórios.
+Central de atendimento e requerimentos da secretaria. O aluno abre solicitações, acompanha o andamento, envia os documentos do estágio, tira declarações com QR Code e consulta a FAQ. A secretaria atende pelo kanban, a coordenação dá o parecer e aprova os documentos do estágio, a equipe conversa pelo chat interno e a administração cadastra tudo e acompanha os relatórios.
 
-Projeto de Curricularização da Extensão · 4º semestre de ADS · Programação Web (PHP) e Banco de Dados (MySQL) · Prof. Me. Leonardo José de Lima Ferrucci.
+Projeto de Curricularização da Extensão · 4º semestre de ADS · Identidade visual institucional em vermelho e cinza · Programação Web (PHP) e Banco de Dados (MySQL) · Prof. Me. Leonardo José de Lima Ferrucci.
 
 **Autoras:** Ana Laura, Silvia Helena e Maria Júlia.
 
@@ -16,7 +16,7 @@ Projeto de Curricularização da Extensão · 4º semestre de ADS · Programaç�
 1. Copie a pasta `secretaria-digital` para `C:\xampp\htdocs\`.
 2. No painel do XAMPP, inicie o **Apache** e o **MySQL**.
 3. Abra `http://localhost/phpmyadmin`, vá na aba **SQL**, cole o conteúdo de `banco.sql` e clique em **Executar**.
-   O script cria o banco `secretaria_digital`, as 14 tabelas e o usuário do primeiro acesso.
+   O script cria o banco `secretaria_digital`, as 19 tabelas e o usuário do primeiro acesso.
 4. Se o seu MySQL tiver senha no usuário `root`, ajuste a variável `$senha` em `conecta.php`.
 5. Acesse `http://localhost/secretaria-digital/`.
 
@@ -37,15 +37,15 @@ Todo dado entra no sistema pelas telas de cadastro. Logado como **admin**:
 1. **Cadastros → Cursos:** cadastre os cursos (ex.: ADS, Gestão Empresarial).
 2. **Cadastros → Tipos de requerimento:** cadastre os tipos, o prazo de cada um, se precisa de parecer da coordenação e se exige anexo.
 3. **Cadastros → Usuários:** cadastre a secretaria, a coordenação de cada curso e os alunos.
-4. A secretaria cadastra a FAQ, as respostas prontas e os avisos do mural.
+4. A secretaria cadastra a FAQ, as respostas prontas, os avisos do mural e as **etapas do estágio** (menu Mais → Etapas do estágio), com o modelo de cada documento.
 
 ## Níveis de acesso
 
 | Nível | O que faz |
 | --- | --- |
-| Aluno | Abre solicitações com anexo, conversa no chamado, emite declarações, consulta a FAQ, avalia o atendimento. Só vê os próprios dados. |
-| Secretaria | Atende pelo kanban (assume, muda status, pede documento, reenvia aviso), responde com respostas prontas e notas internas, cadastra alunos, FAQ e avisos do mural, emite declarações e vê relatórios. |
-| Coordenação | Vê só os chamados do próprio curso, dá parecer (deferir, indeferir ou devolver) e vê os relatórios do curso. |
+| Aluno | Abre solicitações com anexo, conversa no chamado, cadastra o estágio e envia os documentos, emite declarações, consulta a FAQ, avalia o atendimento. Só vê os próprios dados. |
+| Secretaria | Atende pelo kanban (assume, muda status, pede documento, reenvia aviso), responde com respostas prontas e notas internas, cadastra alunos, FAQ e avisos do mural, emite declarações, cadastra as etapas do estágio, aprova documentos de estágio, usa o chat da equipe e vê relatórios. |
+| Coordenação | Vê só os chamados e estágios do próprio curso, dá parecer (deferir, indeferir ou devolver), aprova ou pede correção dos documentos de estágio, usa o chat da equipe e vê os relatórios do curso. |
 | Administração | Cadastra usuários, cursos, tipos, FAQ, respostas e avisos; vê kanban (sem mexer), relatórios e o log de auditoria. |
 
 Cada página confere o nível do usuário no PHP (`verifica_nivel()` em `funcoes.php`). Digitar o endereço de uma página não permitida volta para o painel com "Acesso negado".
@@ -60,8 +60,8 @@ Cada página confere o nível do usuário no PHP (`verifica_nivel()` em `funcoes
 | Página inicial `index.php` | Login, mural de avisos e FAQ |
 | Cabeçalho e rodapé idênticos | `cabecalho.php` e `rodape.php` incluídos em todas as páginas |
 | Todo dado entra via cadastro | Telas `*_add.php` / `*_alt.php`; o script só cria o primeiro admin |
-| Relatórios ordenáveis | `relatorios.php` (5 relatórios) e todas as listas: clique no título da coluna |
-| Gerenciamento de imagens (CRUD, upload, remoção) | Mural de avisos: `aviso_*.php`, pasta `uploads/avisos/` |
+| Relatórios ordenáveis | `relatorios.php` (6 relatórios, incluindo estágios) e todas as listas: clique no título da coluna |
+| Gerenciamento de imagens (CRUD, upload, remoção) | Mural de avisos: `aviso_*.php`, pasta `uploads/avisos/` (e modelos de documentos do estágio) |
 | SHA-256 com salt baseado no login | `gera_hash()` em `funcoes.php`: `hash('sha256', $login . $senha)` |
 | Prepared statements | Todas as consultas com dados do usuário usam `mysqli_stmt_*` |
 | Prevenção de XSS e sanitização | `seguro()` (htmlspecialchars) em toda saída; `limpa()` e `(int)` na entrada |
@@ -83,10 +83,14 @@ O padrão de nomes segue o das aulas: `entidade_acao.php`.
 | `*_del.php` | Exclusão (quem tem histórico é desativado em vez de apagado) |
 | `chamado_*.php`, `kanban.php`, `anexo_ver.php` | Chamados |
 | `declaracao_*.php`, `validar.php` | Declarações com QR Code e validação pública |
+| `etapa_*.php`, `estagio_*.php` | Estágio: etapas com modelos, guia, cadastro do estágio, envio e aprovação dos documentos |
+| `chat.php`, `chat_envia2.php`, `chat_novas.php` | Chat interno da equipe |
 | `relatorios.php`, `auditoria_lista.php` | Relatórios e auditoria |
 | `whatsapp_config.php`, `whatsapp_webhook.php`, `perfil_alt.php` | Integração com o WhatsApp e "Meus dados" |
 | `uploads/avisos/` | Imagens do mural |
 | `uploads/anexos/` | Anexos dos chamados (bloqueados por `.htaccess`, entregues só por `anexo_ver.php`) |
+| `uploads/modelos/` | Modelos dos documentos do estágio (públicos, para baixar) |
+| `uploads/estagio/` | Documentos de estágio enviados pelos alunos (bloqueados, entregues só por `estagio_arquivo.php`) |
 
 ## Regras de negócio principais
 
@@ -96,6 +100,18 @@ O padrão de nomes segue o das aulas: `entidade_acao.php`.
 - Só a coordenação defere ou indefere, e só chamados do próprio curso.
 - Notas internas não aparecem para o aluno.
 - Toda mudança fica no histórico do chamado e as ações importantes ficam no log de auditoria.
+
+### Estágio
+- A secretaria cadastra as **etapas** (documentos exigidos), com ordem, prazo em dias a partir do início do estágio e um modelo para baixar. Elas aparecem no **Guia do estágio**, que é público.
+- O aluno cadastra o estágio (empresa, supervisor, carga horária, período) e envia cada documento em PDF, PNG ou JPG. Só pode ter um estágio em andamento por vez.
+- A coordenação do curso, ou a secretaria, **aprova** ou **pede correção** com uma observação. O aluno é avisado e reenvia; os envios anteriores ficam no histórico.
+- A barra de progresso mostra quantos documentos obrigatórios já foram aprovados.
+
+### Chat da equipe
+- Só secretaria, coordenação e administração usam; os alunos não têm acesso.
+- Há um canal **Geral da equipe** e conversas diretas entre duas pessoas.
+- As mensagens novas aparecem sozinhas (a página consulta `chat_novas.php` a cada 4 segundos) e o menu mostra quantas não foram lidas.
+- Escrever `#15` cria um link para o chamado 15.
 
 ## Integração com o WhatsApp (opcional) — Evolution API
 

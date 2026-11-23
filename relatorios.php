@@ -10,7 +10,8 @@
         "tipos" => "Por tipo de requerimento",
         "cursos" => "Por curso",
         "atrasados" => "Atrasados",
-        "alunos" => "Por aluno"
+        "alunos" => "Por aluno",
+        "estagios" => "Estágios"
     );
     $rel = $_GET['rel'] ?? "chamados";
     if(!array_key_exists($rel, $relatorios)){
@@ -93,6 +94,23 @@
                 AND DATE(c.criado_em) BETWEEN ? AND ? AND (? = 0 OR a.id_curso = ?)
                 ORDER BY $ordem";
     }
+    else if($rel == "estagios"){
+        $colunas = array("estagio" => "Nº", "aluno" => "Aluno", "curso" => "Curso", "empresa" => "Empresa", "inicio" => "Início",
+                         "fim" => "Fim", "situacao" => "Situação", "aprovados" => "Docs. aprovados", "pendentes" => "Para avaliar", "correcoes" => "Com correção");
+        $ordem = ordem_sql(array("estagio" => "estagio", "aluno" => "aluno", "curso" => "curso", "empresa" => "empresa", "inicio" => "inicio",
+            "fim" => "fim", "situacao" => "situacao", "aprovados" => "aprovados", "pendentes" => "pendentes", "correcoes" => "correcoes"), "inicio");
+        $sql = "SELECT e.id_estagio AS estagio, u.nome AS aluno, cu.sigla AS curso, e.empresa, e.data_inicio AS inicio, e.data_fim AS fim,
+                       CASE e.situacao WHEN 'em_andamento' THEN 'Em andamento' WHEN 'concluido' THEN 'Concluído' ELSE 'Cancelado' END AS situacao,
+                       (SELECT COUNT(DISTINCT en.id_etapa) FROM tb_entregas en WHERE en.id_estagio = e.id_estagio AND en.status = 'aprovado') AS aprovados,
+                       (SELECT COUNT(*) FROM tb_entregas en WHERE en.id_estagio = e.id_estagio AND en.status = 'enviado') AS pendentes,
+                       (SELECT COUNT(*) FROM tb_entregas en WHERE en.id_estagio = e.id_estagio AND en.status = 'correcao'
+                        AND en.id_entrega = (SELECT MAX(x.id_entrega) FROM tb_entregas x WHERE x.id_estagio = en.id_estagio AND x.id_etapa = en.id_etapa)) AS correcoes
+                FROM tb_estagios e
+                INNER JOIN tb_usuarios u ON u.id_usuario = e.id_aluno
+                LEFT JOIN tb_cursos cu ON cu.id_curso = u.id_curso
+                WHERE e.data_inicio BETWEEN ? AND ? AND (? = 0 OR u.id_curso = ?)
+                ORDER BY $ordem";
+    }
     else{
         $colunas = array("aluno" => "Aluno", "ra" => "RA", "curso" => "Curso", "total" => "Chamados",
                          "andamento" => "Em andamento", "declaracoes" => "Declarações emitidas");
@@ -164,6 +182,12 @@
                     $valor = $linha[$campo];
                     if($campo == "id"){
                         $valor = "<a href='chamado_ver.php?id=" . (int)$valor . "'>#" . (int)$valor . "</a>";
+                    }
+                    else if($campo == "estagio"){
+                        $valor = "<a href='estagio_ver.php?id=" . (int)$valor . "'>#" . (int)$valor . "</a>";
+                    }
+                    else if($campo == "inicio" || $campo == "fim"){
+                        $valor = data_br($valor);
                     }
                     else if($campo == "status"){
                         $valor = etiqueta_status($valor);

@@ -5,3 +5,9 @@ uploads/avisos/*
 uploads/anexos/*
 !uploads/anexos/.htaccess
 !uploads/anexos/.gitkeep
+uploads/modelos/*
+!uploads/modelos/.htaccess
+!uploads/modelos/.gitkeep
+uploads/estagio/*
+!uploads/estagio/.htaccess
+!uploads/estagio/.gitkeep
