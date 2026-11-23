@@ -1,0 +1,132 @@
+/* Secretaria Digital - estilo próprio por cima do Bootstrap */
+/* Fontes guardadas no próprio projeto (funciona sem internet) */
+@font-face{ font-family: Inter; font-weight: 400; src: url("../fontes/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face{ font-family: Inter; font-weight: 500; src: url("../fontes/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face{ font-family: Inter; font-weight: 600; src: url("../fontes/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face{ font-family: Inter; font-weight: 700; src: url("../fontes/inter-latin-700-normal.woff2") format("woff2"); }
+@font-face{ font-family: "Space Grotesk"; font-weight: 600; src: url("../fontes/space-grotesk-latin-600-normal.woff2") format("woff2"); }
+@font-face{ font-family: "Space Grotesk"; font-weight: 700; src: url("../fontes/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+:root{
+    --vinho: #A4161A;
+    --vinho-escuro: #7A0F12;
+    --vinho-claro: #FBE9E9;
+    --fundo: #F6F5F2;
+    --borda: #E2E0DA;
+    --texto: #1A1A1A;
+    --texto-suave: #555555;
+}
+body{
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+main{ flex: 1; }
+h1, h2, h3, .marca{ font-family: "Space Grotesk", Inter, sans-serif; font-weight: 700; }
+h1{ font-size: 1.9rem; }
+a{ color: var(--vinho); }
+a:hover{ color: var(--vinho-escuro); }
+
+/* Cabeçalho */
+.cabecalho{ background: #FFFFFF; border-bottom: 1px solid var(--borda); }
+.logo{
+    width: 36px; height: 36px; border-radius: 9px;
+    background: var(--vinho); color: #FFF;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: "Space Grotesk", sans-serif; font-weight: 700;
+}
+.marca{ color: var(--texto); font-size: 1.15rem; }
+.navbar .nav-link{ color: #333; font-weight: 500; border-radius: 8px; padding: .45rem .6rem !important; font-size: .95rem; white-space: nowrap; }
+.navbar .nav-link.active, .navbar .nav-link:hover{ background: var(--vinho-claro); color: var(--vinho-escuro); }
+.btn-usuario{ background: transparent; border: 1px solid var(--borda); line-height: 1.1; font-weight: 600; white-space: nowrap; }
+.btn-usuario small{ font-weight: 400; color: var(--texto-suave); font-size: .75rem; }
+.sino{ position: relative; color: #333; display: inline-flex; padding: 8px; }
+.badge-notif{
+    position: absolute; top: 0; right: -2px;
+    background: var(--vinho); color: #FFF; border-radius: 999px;
+    font-size: .7rem; padding: 1px 6px; font-weight: 700;
+}
+
+/* Rodapé */
+.rodape{ background: #1F1F1F; color: #E4E4E4; padding: 18px 0; font-size: .9rem; margin-top: 32px; }
+.rodape a{ color: #FFFFFF; }
+
+/* Botões */
+.btn-principal{ background: var(--vinho); border-color: var(--vinho); color: #FFF; font-weight: 600; }
+.btn-principal:hover, .btn-principal:focus{ background: var(--vinho-escuro); border-color: var(--vinho-escuro); color: #FFF; }
+.btn-contorno{ border: 1px solid var(--vinho); color: var(--vinho); background: #FFF; font-weight: 600; }
+.btn-contorno:hover{ background: var(--vinho-claro); color: var(--vinho-escuro); }
+
+/* Cartões */
+.cartao{ background: #FFFFFF; border: 1px solid var(--borda); border-radius: 14px; padding: 22px; }
+.cartao-escuro{ background: #1F1F1F; color: #F5F5F5; border-radius: 14px; padding: 22px; }
+.numero{ font-family: "Space Grotesk", sans-serif; font-size: 2rem; font-weight: 700; line-height: 1; }
+.rotulo{ font-size: .85rem; color: var(--texto-suave); }
+.atalho{
+    display: flex; flex-direction: column; gap: 4px;
+    background: #FFF; border: 1px solid var(--borda); border-radius: 14px;
+    padding: 18px; text-decoration: none; color: var(--texto); height: 100%;
+}
+.atalho:hover{ border-color: var(--vinho); color: var(--texto); }
+.atalho strong{ font-size: 1.05rem; }
+.atalho span{ font-size: .9rem; color: var(--texto-suave); }
+.atalho-principal{ background: var(--vinho); border-color: var(--vinho); color: #FFF; }
+.atalho-principal span{ color: #F6DADA; }
+.atalho-principal:hover{ color: #FFF; background: var(--vinho-escuro); }
+
+/* Tabelas */
+.tabela{ background: #FFF; border: 1px solid var(--borda); border-radius: 14px; overflow-x: auto; }
+.tabela table{ margin: 0; }
+.tabela th{ background: #FAFAF8; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); white-space: nowrap; }
+.link-ordem{ color: var(--texto-suave); text-decoration: none; }
+.link-ordem:hover{ color: var(--vinho); }
+
+/* Status dos chamados */
+.status{ display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.status-aberto{ background: #DBEAFE; color: #1E3A8A; }
+.status-em_analise{ background: #FEF3C7; color: #7C2D12; }
+.status-aguardando_aluno{ background: #FFEDD5; color: #7C2D12; }
+.status-aguardando_coordenacao{ background: #F3E8FF; color: #581C87; }
+.status-deferido{ background: #DCFCE7; color: #14532D; }
+.status-indeferido{ background: #FEE2E2; color: #7F1D1D; }
+.status-concluido{ background: #E5E5E5; color: #262626; }
+
+/* Kanban */
+.kanban{ display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.coluna{ border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+.coluna h2{ font-family: Inter, sans-serif; font-size: .95rem; font-weight: 700; margin: 0; display: flex; justify-content: space-between; }
+.col-aberto{ background: #EEF2FA; }
+.col-em_analise{ background: #FBF6E8; }
+.col-aguardando_aluno{ background: #FCEFE3; }
+.col-aguardando_coordenacao{ background: #F4EEFB; }
+.col-finalizados{ background: #EFEFEC; }
+.card-chamado{ background: #FFF; border: 1px solid var(--borda); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.card-chamado.atrasado{ border: 1.5px solid #E58A8A; }
+.alerta-lembrete{ background: #FFF4E5; border: 1px solid #F5C98F; border-radius: 8px; padding: 6px 8px; font-size: .8rem; color: #5C2A0A; }
+
+/* Conversa do chamado */
+.mensagem{ background: #FFF; border: 1px solid var(--borda); border-radius: 12px; padding: 14px 16px; }
+.mensagem-interna{ background: #FFFBEB; border: 1px dashed #D9A441; }
+.mensagem-aluno{ border-left: 4px solid var(--vinho); }
+.evento{ font-size: .82rem; color: var(--texto-suave); text-align: center; }
+
+/* Mural */
+.aviso img{ width: 100%; height: 180px; object-fit: cover; border-radius: 10px 10px 0 0; }
+.aviso{ background: #FFF; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; height: 100%; }
+.aviso .corpo{ padding: 14px 16px; }
+.miniatura{ width: 90px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--borda); }
+
+/* Formulários */
+.form-control:focus, .form-select:focus{ border-color: var(--vinho); box-shadow: 0 0 0 .2rem rgba(164,22,26,.15); }
+.form-label{ font-weight: 600; }
+
+/* Declaração para impressão */
+.declaracao{ background: #FFF; max-width: 800px; margin: 0 auto; padding: 48px; border: 1px solid var(--borda); }
+@media print{
+    .cabecalho, .rodape, .nao-imprimir{ display: none !important; }
+    body{ background: #FFF; }
+    .declaracao{ border: 0; padding: 0; }
+}
