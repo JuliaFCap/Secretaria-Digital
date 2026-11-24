@@ -41,16 +41,9 @@
         <input type="email" class="form-control" id="txtemail" readonly maxlength="120" value="<?php echo seguro($usuario['email'] ?? ""); ?>">
         <div class="form-text">Gerado automaticamente como login@secretariadigital.local.</div>
     </div>
-    <script>
-        const campoLogin = document.getElementById("txtlogin");
-        const campoEmail = document.getElementById("txtemail");
-        const atualizarEmail = () => campoEmail.value = campoLogin.value.toLowerCase() + "@secretariadigital.local";
-        campoLogin.addEventListener("input", atualizarEmail);
-        atualizarEmail();
-    </script>
     <div class="col-md-6">
         <label for="txttelefone" class="form-label">Celular / WhatsApp</label>
-        <input type="text" class="form-control" id="txttelefone" name="txttelefone" maxlength="20" value="<?php echo seguro($usuario['telefone'] ?? ""); ?>" placeholder="(16) 99999-9999">
+        <input type="text" class="form-control" id="txttelefone" name="txttelefone" required maxlength="20" value="<?php echo seguro($usuario['telefone'] ?? ""); ?>" placeholder="(16) 99999-9999">
     </div>
     <div class="col-md-6">
         <label for="selcurso" class="form-label">Curso</label>
@@ -65,14 +58,14 @@
         </select>
         <div class="form-text">Obrigatório para aluno e coordenação.</div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 <?php echo ($nivel_atual == "aluno") ? "" : "d-none"; ?>" id="campo-ra">
         <label for="txtra" class="form-label">RA</label>
-        <input type="text" class="form-control" id="txtra" name="txtra" maxlength="20" value="<?php echo seguro($usuario['ra'] ?? ""); ?>">
+        <input type="text" class="form-control" id="txtra" name="txtra" <?php echo ($nivel_atual == "aluno") ? "required" : ""; ?> maxlength="20" value="<?php echo seguro($usuario['ra'] ?? ""); ?>">
         <div class="form-text">Obrigatório para aluno.</div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 <?php echo ($nivel_atual == "aluno") ? "" : "d-none"; ?>">
         <label for="numsemestre" class="form-label">Semestre</label>
-        <input type="number" class="form-control" id="numsemestre" name="numsemestre" min="1" max="10" value="<?php echo seguro($usuario['semestre'] ?? ""); ?>">
+        <input type="number" class="form-control" id="numsemestre" name="numsemestre" min="1" max="10" <?php echo ($nivel_atual == "aluno") ? "required" : ""; ?> value="<?php echo seguro($usuario['semestre'] ?? ""); ?>">
     </div>
     <div class="col-12">
         <div class="form-check">
@@ -87,3 +80,26 @@
         <?php } ?>
     </div>
 </div>
+<script>
+    const campoLogin = document.getElementById("txtlogin");
+    const campoEmail = document.getElementById("txtemail");
+    const atualizarEmail = () => campoEmail.value = campoLogin.value.toLowerCase() + "@secretariadigital.local";
+    campoLogin.addEventListener("input", atualizarEmail);
+    atualizarEmail();
+    const campoNivel = document.getElementById("selnivel");
+    const campoSemestre = document.getElementById("numsemestre");
+    const campoRa = document.getElementById("txtra");
+    const linhaRa = document.getElementById("campo-ra");
+    const linhaSemestre = campoSemestre.closest(".col-md-3");
+    const atualizarCamposAluno = () => {
+        const aluno = campoNivel.value === "aluno";
+        campoSemestre.required = aluno;
+        campoRa.required = aluno;
+        linhaRa.classList.toggle("d-none", !aluno);
+        linhaSemestre.classList.toggle("d-none", !aluno);
+    };
+    if(campoNivel.tagName === "SELECT"){
+        campoNivel.addEventListener("change", atualizarCamposAluno);
+        atualizarCamposAluno();
+    }
+</script>

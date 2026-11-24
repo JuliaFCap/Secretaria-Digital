@@ -44,7 +44,7 @@ CREATE TABLE tb_usuarios (
   id_curso        INT          NULL,
   ra              VARCHAR(20)  NULL,
   semestre        TINYINT      NULL,
-  telefone        VARCHAR(20)  NULL,
+  telefone        VARCHAR(20)  NOT NULL,
   aviso_whatsapp  TINYINT(1)   NOT NULL DEFAULT 0,
   aviso_email     TINYINT(1)   NOT NULL DEFAULT 1,
   ativo           TINYINT(1)   NOT NULL DEFAULT 1,
@@ -397,9 +397,9 @@ SELECT
   'mario.ambrosio@secretariadigital.local',
   'aluno',
   id_curso,
-  'DEMO-ADS-001',
+  '20250001',
   3,
-  '(00) 00000-0000',
+  '(00) 00000-0001',
   0,
   1
 FROM tb_cursos
@@ -407,20 +407,22 @@ WHERE sigla = 'ADS';
 
 -- Usuários demonstrativos
 
-INSERT INTO tb_usuarios (nome, login, senha, email, nivel, ativo)
+INSERT INTO tb_usuarios
+  (nome, login, senha, email, nivel, telefone, ativo)
 VALUES
   ('Sofia Martins', 'sofia.martins',
    SHA2(CONCAT('sofia.martins', UUID()), 256),
-   'sofia.martins@secretariadigital.local', 'secretaria', 0);
+   'sofia.martins@secretariadigital.local', 'secretaria',
+   '(00) 00000-0000', 0);
 
 INSERT INTO tb_usuarios
-  (nome, login, senha, email, nivel, id_curso, ativo)
+  (nome, login, senha, email, nivel, id_curso, telefone, ativo)
 SELECT
   dados.nome,
   dados.login,
   SHA2(CONCAT(dados.login, UUID()), 256),
   CONCAT(dados.login, '@secretariadigital.local'),
-  'coordenacao', dados.id_curso, 0
+  'coordenacao', dados.id_curso, '(00) 00000-0000', 0
 FROM (
   SELECT
     c.id_curso,
@@ -453,8 +455,34 @@ SELECT
   dados.login,
   SHA2(CONCAT(dados.login, UUID()), 256),
   CONCAT(dados.login, '@secretariadigital.local'),
-  'aluno', dados.id_curso, CONCAT('DEMO-', dados.sigla), 1,
-  '(00) 00000-0000', 0, 0
+  'aluno', dados.id_curso,
+  CASE dados.sigla
+    WHEN 'ADS' THEN '20250002'
+    WHEN 'ADM' THEN '20250003'
+    WHEN 'GE' THEN '20250004'
+    WHEN 'GC' THEN '20250005'
+    WHEN 'GPI' THEN '20250006'
+    WHEN 'SI' THEN '20250007'
+    ELSE CONCAT('2025', LPAD(dados.id_curso, 4, '0'))
+  END,
+  CASE dados.sigla
+    WHEN 'ADS' THEN 2
+    WHEN 'ADM' THEN 4
+    WHEN 'GE' THEN 3
+    WHEN 'GC' THEN 5
+    WHEN 'GPI' THEN 6
+    ELSE 1
+  END,
+  CASE dados.sigla
+    WHEN 'ADS' THEN '(00) 00000-0002'
+    WHEN 'ADM' THEN '(00) 00000-0003'
+    WHEN 'GE' THEN '(00) 00000-0004'
+    WHEN 'GC' THEN '(00) 00000-0005'
+    WHEN 'GPI' THEN '(00) 00000-0006'
+    WHEN 'SI' THEN '(00) 00000-0007'
+    ELSE '(00) 00000-0008'
+  END,
+  0, 0
 FROM (
   SELECT
     c.id_curso,
@@ -642,7 +670,10 @@ SELECT
   UPPER(SUBSTRING(SHA2(CONCAT('documento-demo-', aluno.login), 256), 1, 16)),
   aluno.id_usuario, 'matricula', DATE_ADD(CURDATE(), INTERVAL 30 DAY), 0
 FROM tb_usuarios aluno
-WHERE aluno.ra LIKE 'DEMO-%';
+WHERE aluno.login IN (
+  'mario.ambrosio', 'lara.mendonca', 'pedro.azevedo', 'camila.tavares',
+  'rafael.campos', 'isabela.freire', 'diego.barros'
+);
 
 -- FAQ
 

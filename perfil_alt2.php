@@ -5,6 +5,11 @@
     verifica_login();
     $telefone = limpa($_POST['txttelefone'] ?? "");
     $whats = isset($_POST['ckwhats']) ? 1 : 0;
+    if($telefone == "" || strlen($telefone) > 20){
+        $_SESSION['erro'] = "Informe um telefone com até 20 caracteres.";
+        header("location: perfil_alt.php");
+        exit;
+    }
     if($whats == 1 && telefone_whatsapp($telefone) == ""){
         $_SESSION['erro'] = "Para receber avisos por WhatsApp, informe um celular válido com DDD.";
         header("location: perfil_alt.php");

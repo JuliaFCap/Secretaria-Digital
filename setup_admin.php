@@ -18,6 +18,8 @@
         $nome = is_string($nome) ? limpa($nome) : "";
         $login = $_POST['txtlogin'] ?? "";
         $login = is_string($login) ? strtolower(limpa($login)) : "";
+        $telefone = $_POST['txttelefone'] ?? "";
+        $telefone = is_string($telefone) ? limpa($telefone) : "";
         $senha = $_POST['txtsenha'] ?? "";
         $confirma = $_POST['txtconfirma'] ?? "";
         $erro = "";
@@ -33,6 +35,9 @@
         }
         else if(!preg_match("/^[a-z]+\.[a-z]+$/", $login) || strlen($login) > 50){
             $erro = "Use o padrão primeiro.sobrenome no login, somente com letras minúsculas.";
+        }
+        else if($telefone == "" || strlen($telefone) > 20){
+            $erro = "Informe um telefone com até 20 caracteres.";
         }
         else if(strlen($senha) < 6 || strlen($senha) > 72){
             $erro = "A senha deve ter entre 6 e 72 bytes.";
@@ -69,11 +74,11 @@
                     $hash = gera_hash($senha);
                     $email = $login . "@secretariadigital.local";
                     $nivel = "admin";
-                    $sql = "INSERT INTO tb_usuarios (nome, login, senha, email, nivel)
-                            VALUES (?, ?, ?, ?, ?)";
+                    $sql = "INSERT INTO tb_usuarios (nome, login, senha, email, nivel, telefone)
+                            VALUES (?, ?, ?, ?, ?, ?)";
                     $stmt = mysqli_stmt_init($con);
                     $inserido = mysqli_stmt_prepare($stmt, $sql) &&
-                        mysqli_stmt_bind_param($stmt, "sssss", $nome, $login, $hash, $email, $nivel) &&
+                        mysqli_stmt_bind_param($stmt, "ssssss", $nome, $login, $hash, $email, $nivel, $telefone) &&
                         mysqli_stmt_execute($stmt) &&
                         mysqli_stmt_affected_rows($stmt) == 1;
 
@@ -139,6 +144,10 @@
                     <label for="txtlogin" class="form-label">Login</label>
                     <input type="text" class="form-control" id="txtlogin" name="txtlogin" required maxlength="50" pattern="[a-z]+\.[a-z]+" autocomplete="username">
                     <div class="form-text">Use primeiro.sobrenome em letras minúsculas. O e-mail será gerado como login@secretariadigital.local.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="txttelefone" class="form-label">Celular / WhatsApp</label>
+                    <input type="text" class="form-control" id="txttelefone" name="txttelefone" required maxlength="20" placeholder="(16) 99999-9999">
                 </div>
                 <div class="mb-3">
                     <label for="txtsenha" class="form-label">Senha</label>

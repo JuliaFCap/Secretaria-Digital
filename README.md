@@ -21,7 +21,7 @@ Projeto de Curricularização da Extensão · 4º semestre de ADS · Identidade 
    O script cria o banco `secretaria_digital`, as 19 tabelas e os dados demonstrativos, mas não cria uma conta administrativa.
 4. Se o seu MySQL tiver senha no usuário `root`, ajuste a variável `$senha` em `conecta.php`.
 5. Acesse `http://localhost/secretaria-digital/`.
-6. Na primeira visita, o sistema abrirá a configuração do administrador. Informe nome, login no padrão `primeiro.sobrenome` e uma senha. O e-mail será criado como `login@secretariadigital.local`.
+6. Na primeira visita, o sistema abrirá a configuração do administrador. Informe nome, login no padrão `primeiro.sobrenome`, telefone e uma senha. O e-mail será criado como `login@secretariadigital.local`.
 
 > O script apaga e recria o banco `secretaria_digital`. Rode só na instalação.
 
@@ -29,7 +29,7 @@ Projeto de Curricularização da Extensão · 4º semestre de ADS · Identidade 
 
 Não há credencial padrão no banco. A tela de configuração só permite criar o primeiro administrador e fica indisponível assim que essa conta existe. As senhas definidas pelo sistema são armazenadas com `password_hash()` e verificadas com `password_verify()`. Hashes SHA-256 antigos são aceitos durante a migração e atualizados automaticamente após um login válido.
 
-Para atualizar uma instalação existente, execute o arquivo de migração `migrar_senhas.sql` no banco `secretaria_digital` antes de substituir os arquivos do sistema. O nome do banco permanece `secretaria_digital`; o script apenas amplia a coluna de senha para comportar os hashes modernos. A credencial administrativa já existente permanece válida e seu hash será atualizado no próximo login.
+Para atualizar uma instalação existente, faça backup e execute `migrar_senhas.sql` e `migrar_campos_usuario.sql` no banco `secretaria_digital` antes de substituir os arquivos do sistema. A migração de campos preenche telefones ausentes com um placeholder inválido (e desativa o WhatsApp nesses registros), substitui os RAs fictícios dos usuários demonstrativos, gera um RA numérico para alunos sem RA e define semestre 1 para alunos sem semestre válido. Substitua os valores provisórios pelos dados corretos; não habilite avisos por WhatsApp para telefones de placeholder. O hash da senha é atualizado automaticamente após o próximo login.
 
 ## Primeiros passos depois de instalar
 
@@ -50,6 +50,8 @@ Todo dado entra no sistema pelas telas de cadastro. Logado com a conta de admini
 | Administração | Cadastra usuários, cursos, tipos, FAQ, respostas e avisos; vê kanban (sem mexer), relatórios e o log de auditoria. |
 
 Todas as contas cadastradas (aluno, secretaria, coordenação e administração) entram pela mesma tela de login; alunos e equipe são cadastrados pela secretaria ou administração. Cada página protegida confirma no banco que a conta continua ativa e confere o nível do usuário (`verifica_nivel()` em `funcoes.php`); alunos veem apenas os próprios chamados e estágios. Digitar o endereço de uma página não permitida volta para o painel com "Acesso negado".
+
+O telefone é obrigatório para todas as contas; o RA e o semestre são obrigatórios para alunos. Secretaria, coordenação e administração não precisam de RA.
 
 ## Como o projeto atende aos requisitos
 
@@ -78,6 +80,7 @@ O padrão de nomes segue o das aulas: `entidade_acao.php`.
 | `funcoes.php` | Funções do sistema (segurança, sessão, histórico, upload, ordenação) |
 | `setup_admin.php` | Configuração protegida da primeira conta administrativa |
 | `migrar_senhas.sql` | Atualização do tamanho da coluna de senha em bancos existentes |
+| `migrar_campos_usuario.sql` | Preenchimento de telefones e dados acadêmicos ausentes em bancos existentes |
 | `cabecalho.php`, `rodape.php` | Cabeçalho e rodapé de todas as páginas |
 | `index.php`, `login.php`, `logout.php`, `painel.php` | Entrada no sistema |
 | `*_lista.php` | Listagem com ordenação |

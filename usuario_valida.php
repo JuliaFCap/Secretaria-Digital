@@ -39,14 +39,20 @@
     else if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
         $erro = "E-mail inválido.";
     }
+    else if($telefone == "" || strlen($telefone) > 20){
+        $erro = "Informe um telefone com até 20 caracteres.";
+    }
     else if(!in_array($nivel, array("aluno", "secretaria", "coordenacao", "admin"))){
         $erro = "Nível inválido.";
     }
     else if(($nivel == "aluno" || $nivel == "coordenacao") && $curso < 1){
         $erro = "Aluno e coordenação precisam de um curso.";
     }
-    else if($nivel == "aluno" && $ra == ""){
-        $erro = "Informe o RA do aluno.";
+    else if($nivel == "aluno" && ($ra == "" || strlen($ra) > 20)){
+        $erro = "Informe um RA com até 20 caracteres.";
+    }
+    else if($nivel == "aluno" && ($semestre < 1 || $semestre > 10)){
+        $erro = "Informe um semestre entre 1 e 10.";
     }
     else if($senha_nova != "" && strlen($senha_nova) < 6){
         $erro = "A senha precisa ter pelo menos 6 caracteres.";

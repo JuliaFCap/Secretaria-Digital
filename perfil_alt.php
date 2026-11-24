@@ -25,7 +25,7 @@
             <form action="perfil_alt2.php" method="post">
                 <div class="mb-3">
                     <label for="txttelefone" class="form-label">Celular / WhatsApp</label>
-                    <input type="text" class="form-control" id="txttelefone" name="txttelefone" maxlength="20" value="<?php echo seguro($eu['telefone']); ?>" placeholder="(16) 99999-9999">
+                    <input type="text" class="form-control" id="txttelefone" name="txttelefone" required maxlength="20" value="<?php echo seguro($eu['telefone']); ?>" placeholder="(16) 99999-9999">
                 </div>
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="ckwhats" name="ckwhats" value="1" <?php if($eu['aviso_whatsapp']){ echo "checked"; } ?>>
