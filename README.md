@@ -49,7 +49,7 @@ Todo dado entra no sistema pelas telas de cadastro. Logado com a conta de admini
 | Coordenação | Vê só os chamados e estágios do próprio curso, dá parecer (deferir, indeferir ou devolver), aprova ou pede correção dos documentos de estágio, usa o chat da equipe e vê os relatórios do curso. |
 | Administração | Cadastra usuários, cursos, tipos, FAQ, respostas e avisos; vê kanban (sem mexer), relatórios e o log de auditoria. |
 
-Cada página confere o nível do usuário no PHP (`verifica_nivel()` em `funcoes.php`). Digitar o endereço de uma página não permitida volta para o painel com "Acesso negado".
+Todas as contas cadastradas (aluno, secretaria, coordenação e administração) entram pela mesma tela de login; alunos e equipe são cadastrados pela secretaria ou administração. Cada página protegida confirma no banco que a conta continua ativa e confere o nível do usuário (`verifica_nivel()` em `funcoes.php`); alunos veem apenas os próprios chamados e estágios. Digitar o endereço de uma página não permitida volta para o painel com "Acesso negado".
 
 ## Como o projeto atende aos requisitos
 

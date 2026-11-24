@@ -49,6 +49,34 @@
             header("location: index.php");
             exit;
         }
+        $id_usuario = filter_var($_SESSION['id_usuario'], FILTER_VALIDATE_INT);
+        if($id_usuario === false || $id_usuario < 1){
+            unset($_SESSION['id_usuario'], $_SESSION['nome'], $_SESSION['login'], $_SESSION['nivel'], $_SESSION['id_curso']);
+            $_SESSION['erro'] = "Faça login para continuar.";
+            header("location: index.php");
+            exit;
+        }
+        global $con;
+        $sql = "SELECT nome, login, nivel, id_curso
+                FROM tb_usuarios WHERE id_usuario = ? AND ativo = 1 LIMIT 1";
+        $stmt = mysqli_stmt_init($con);
+        if(!mysqli_stmt_prepare($stmt, $sql) ||
+           !mysqli_stmt_bind_param($stmt, "i", $id_usuario) ||
+           !mysqli_stmt_execute($stmt)){
+            http_response_code(500);
+            exit("Não foi possível verificar o acesso.");
+        }
+        $usuario = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        if(!$usuario){
+            unset($_SESSION['id_usuario'], $_SESSION['nome'], $_SESSION['login'], $_SESSION['nivel'], $_SESSION['id_curso']);
+            $_SESSION['erro'] = "Sua conta está inativa ou não existe. Faça login novamente.";
+            header("location: index.php");
+            exit;
+        }
+        $_SESSION['nome'] = $usuario['nome'];
+        $_SESSION['login'] = $usuario['login'];
+        $_SESSION['nivel'] = $usuario['nivel'];
+        $_SESSION['id_curso'] = $usuario['id_curso'];
     }
 
     // Exige um dos níveis informados. Ex: verifica_nivel(["admin", "secretaria"])
