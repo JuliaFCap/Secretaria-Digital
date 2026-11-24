@@ -17,12 +17,12 @@
                 </div>
                 <div class="mb-3">
                     <label for="txtnova" class="form-label">Nova senha</label>
-                    <input type="password" class="form-control" id="txtnova" name="txtnova" required minlength="6">
-                    <div class="form-text">Mínimo de 6 caracteres.</div>
+                    <input type="password" class="form-control" id="txtnova" name="txtnova" required minlength="6" maxlength="72">
+                    <div class="form-text">Mínimo de 6 caracteres e máximo de 72 bytes.</div>
                 </div>
                 <div class="mb-3">
                     <label for="txtconfirma" class="form-label">Confirme a nova senha</label>
-                    <input type="password" class="form-control" id="txtconfirma" name="txtconfirma" required minlength="6">
+                    <input type="password" class="form-control" id="txtconfirma" name="txtconfirma" required minlength="6" maxlength="72">
                 </div>
                 <input type="submit" name="btn" value="Salvar nova senha" class="btn btn-principal">
             </form>

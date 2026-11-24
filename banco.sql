@@ -16,7 +16,7 @@ CREATE DATABASE secretaria_digital
 USE secretaria_digital;
 
 -- ---------------------------------------------------------------------
--- Cursos da FATEC (ADS, Gestão Empresarial, Biocombustíveis...)
+-- Cursos da FATEC (ADS, Gestão Empresarial, Gestão Comercial...)
 -- ---------------------------------------------------------------------
 CREATE TABLE tb_cursos (
   id_curso     INT AUTO_INCREMENT PRIMARY KEY,
@@ -30,15 +30,15 @@ CREATE TABLE tb_cursos (
 -- ---------------------------------------------------------------------
 -- Usuários e níveis de acesso
 -- nivel: aluno | secretaria | coordenacao | admin
--- senha: SHA-256 (64 caracteres hexadecimais) com salt baseado no login
---        senha = SHA2(CONCAT(login, senha_digitada), 256)
+-- senhas novas usam password_hash(); hashes SHA-256 de demonstração são
+-- atualizados para password_hash() no primeiro login válido
 -- id_curso: obrigatório para aluno e coordenação (validado no PHP)
 -- ---------------------------------------------------------------------
 CREATE TABLE tb_usuarios (
   id_usuario      INT AUTO_INCREMENT PRIMARY KEY,
   nome            VARCHAR(120) NOT NULL,
   login           VARCHAR(50)  NOT NULL,
-  senha           CHAR(64)     NOT NULL,
+  senha           VARCHAR(255) NOT NULL,
   email           VARCHAR(120) NOT NULL,
   nivel           ENUM('aluno','secretaria','coordenacao','admin') NOT NULL,
   id_curso        INT          NULL,
@@ -376,14 +376,365 @@ CREATE TABLE tb_configuracoes (
                  ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- =====================================================================
--- Credencial para primeiro acesso
--- Todo o resto dos dados entra pelo sistema (telas de cadastro).
---   Login: admin
---   Senha: Fatec@2026  (troque no primeiro acesso)
--- O hash é calculado igual ao PHP: hash('sha256', $login . $senha)
--- =====================================================================
-INSERT INTO tb_usuarios (nome, login, senha, email, nivel)
-VALUES ('Administrador', 'admin',
-        SHA2(CONCAT('admin', 'Fatec@2026'), 256),
-        'admin@secretariadigital.local', 'admin');
+-- Insere os cursos da FATEC Araraquara (para uso no cadastro de alunos e coordenação)
+
+INSERT INTO tb_cursos (nome, sigla) VALUES
+  ('Análise e Desenvolvimento de Sistemas', 'ADS'),
+  ('Administração', 'ADM'),
+  ('Gestão Empresarial', 'GE'),
+  ('Gestão Comercial', 'GC'),
+  ('Gestão da Produção Industrial', 'GPI'),
+  ('Segurança da Informação', 'SI');
+
+-- Conta de aluno vinculada ao curso ADS
+INSERT INTO tb_usuarios (nome, login, senha, email, nivel, id_curso)
+SELECT
+  'Mário Ambrósio',
+  'mario.ambrosio',
+  '24a1d4d64b9b7f18e177ce6dce143697a23c52213f40041cea2d298f18bc8828',
+  'mario.ambrosio@secretariadigital.local',
+  'aluno',
+  id_curso
+FROM tb_cursos
+WHERE sigla = 'ADS';
+
+-- Usuários demonstrativos
+
+INSERT INTO tb_usuarios (nome, login, senha, email, nivel, ativo)
+VALUES
+  ('Sofia Martins', 'sofia.martins',
+   SHA2(CONCAT('sofia.martins', UUID()), 256),
+   'sofia.martins@secretariadigital.local', 'secretaria', 0);
+
+INSERT INTO tb_usuarios
+  (nome, login, senha, email, nivel, id_curso, ativo)
+SELECT
+  dados.nome,
+  dados.login,
+  SHA2(CONCAT(dados.login, UUID()), 256),
+  CONCAT(dados.login, '@secretariadigital.local'),
+  'coordenacao', dados.id_curso, 0
+FROM (
+  SELECT
+    c.id_curso,
+    CASE c.sigla
+      WHEN 'ADS' THEN 'Renata Almeida'
+      WHEN 'ADM' THEN 'Marcos Ribeiro'
+      WHEN 'GE' THEN 'Helena Duarte'
+      WHEN 'GC' THEN 'Caio Nogueira'
+      WHEN 'GPI' THEN 'Lívia Monteiro'
+      WHEN 'SI' THEN 'Bruno Vasconcelos'
+      ELSE CONCAT('Coordenação Fictícia ', c.sigla)
+    END AS nome,
+    CASE c.sigla
+      WHEN 'ADS' THEN 'renata.almeida'
+      WHEN 'ADM' THEN 'marcos.ribeiro'
+      WHEN 'GE' THEN 'helena.duarte'
+      WHEN 'GC' THEN 'caio.nogueira'
+      WHEN 'GPI' THEN 'livia.monteiro'
+      WHEN 'SI' THEN 'bruno.vasconcelos'
+      ELSE CONCAT('coordenacao.', LOWER(c.sigla))
+    END AS login
+  FROM tb_cursos c
+) AS dados;
+
+INSERT INTO tb_usuarios
+  (nome, login, senha, email, nivel, id_curso, ra, semestre, ativo)
+SELECT
+  dados.nome,
+  dados.login,
+  SHA2(CONCAT(dados.login, UUID()), 256),
+  CONCAT(dados.login, '@secretariadigital.local'),
+  'aluno', dados.id_curso, CONCAT('DEMO-', dados.sigla), 1, 0
+FROM (
+  SELECT
+    c.id_curso,
+    c.sigla,
+    CASE c.sigla
+      WHEN 'ADS' THEN 'Lara Mendonça'
+      WHEN 'ADM' THEN 'Pedro Azevedo'
+      WHEN 'GE' THEN 'Camila Tavares'
+      WHEN 'GC' THEN 'Rafael Campos'
+      WHEN 'GPI' THEN 'Isabela Freire'
+      WHEN 'SI' THEN 'Diego Barros'
+      ELSE CONCAT('Aluno Fictício ', c.sigla)
+    END AS nome,
+    CASE c.sigla
+      WHEN 'ADS' THEN 'lara.mendonca'
+      WHEN 'ADM' THEN 'pedro.azevedo'
+      WHEN 'GE' THEN 'camila.tavares'
+      WHEN 'GC' THEN 'rafael.campos'
+      WHEN 'GPI' THEN 'isabela.freire'
+      WHEN 'SI' THEN 'diego.barros'
+      ELSE CONCAT('aluno.', LOWER(c.sigla))
+    END AS login
+  FROM tb_cursos c
+) AS dados;
+
+-- Tipos de requerimento — revisar prazos e documentos com a secretaria
+
+INSERT INTO tb_tipos
+  (nome, descricao, documentos_exigidos, prazo_dias,
+   precisa_coordenacao, exige_anexo)
+VALUES
+  ('Declaração de matrícula', 'Solicitação de declaração de matrícula.',
+   NULL, 5, 0, 0),
+  ('Declaração de frequência', 'Solicitação de declaração de frequência.',
+   NULL, 5, 0, 0),
+  ('Revisão de nota', 'Solicitação de revisão de nota de avaliação.',
+   'Comprovante ou avaliação relacionada, se disponível', 10, 1, 1),
+  ('Aproveitamento de estudos', 'Solicitação de análise de estudos anteriores.',
+   'Histórico escolar e ementas das disciplinas', 15, 1, 1),
+  ('Trancamento de matrícula', 'Solicitação de trancamento de matrícula.',
+   'Documentação comprobatória, se aplicável', 10, 1, 1);
+
+-- Chamados sintéticos cobrindo os status disponíveis.
+
+INSERT INTO tb_chamados
+  (id_aluno, id_tipo, id_responsavel, assunto, descricao, status, prazo,
+   parecer, id_parecerista, parecer_em, aguardando_desde)
+SELECT
+  aluno.id_usuario,
+  tipo.id_tipo,
+  secretaria.id_usuario,
+  demo.assunto,
+  demo.descricao,
+  demo.status,
+  DATE_ADD(CURDATE(), INTERVAL demo.prazo_dias DAY),
+  CASE WHEN demo.status IN ('deferido', 'indeferido')
+       THEN demo.parecer ELSE NULL END,
+  CASE WHEN demo.status IN ('deferido', 'indeferido')
+       THEN coordenador.id_usuario ELSE NULL END,
+  CASE WHEN demo.status IN ('deferido', 'indeferido')
+       THEN NOW() ELSE NULL END,
+  CASE WHEN demo.status = 'aguardando_aluno' THEN NOW() ELSE NULL END
+FROM (
+  SELECT 'mario.ambrosio' AS login_aluno,
+         'Declaração de matrícula' AS tipo,
+         'DEMO | Solicitação aberta (Mário)' AS assunto,
+         'Registro sintético para demonstração do status aberto.' AS descricao,
+         'aberto' AS status, 5 AS prazo_dias, NULL AS parecer
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de frequência',
+         'DEMO | Em análise (Mário)',
+         'Registro sintético para demonstração do status em análise.',
+         'em_analise', 5, NULL
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de matrícula',
+         'DEMO | Aguardando aluno (Mário)',
+         'Registro sintético para demonstração do status aguardando aluno.',
+         'aguardando_aluno', 5, NULL
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de frequência',
+         'DEMO | Aguardando coordenação (Mário)',
+         'Registro sintético para demonstração do status aguardando coordenação.',
+         'aguardando_coordenacao', 10, NULL
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de matrícula',
+         'DEMO | Deferido (Mário)',
+         'Registro sintético para demonstração do status deferido.',
+         'deferido', 15, 'Parecer fictício de demonstração.'
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de frequência',
+         'DEMO | Indeferido (Mário)',
+         'Registro sintético para demonstração do status indeferido.',
+         'indeferido', 10, 'Parecer fictício de demonstração.'
+  UNION ALL
+  SELECT 'mario.ambrosio', 'Declaração de frequência',
+         'DEMO | Concluído (Mário)',
+         'Registro sintético para demonstração do status concluído.',
+         'concluido', 5, NULL
+) AS demo
+JOIN tb_usuarios aluno
+  ON aluno.login = demo.login_aluno
+JOIN tb_tipos tipo
+  ON tipo.nome = demo.tipo
+JOIN tb_usuarios secretaria
+  ON secretaria.login = 'sofia.martins'
+LEFT JOIN tb_usuarios coordenador
+  ON coordenador.nivel = 'coordenacao'
+ AND coordenador.id_curso = aluno.id_curso;
+
+-- Mensagens associadas aos chamados demonstrativos
+INSERT INTO tb_mensagens (id_chamado, id_usuario, mensagem, interna)
+SELECT chamado.id_chamado, aluno.id_usuario, demo.mensagem, 0
+FROM (
+  SELECT 'DEMO | Solicitação aberta (Mário)' AS assunto,
+         'mario.ambrosio' AS login,
+         'Mensagem sintética: solicito a declaração de matrícula.'
+           AS mensagem
+  UNION ALL
+  SELECT 'DEMO | Em análise (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito a declaração de frequência.'
+  UNION ALL
+  SELECT 'DEMO | Aguardando aluno (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito orientação sobre a declaração.'
+  UNION ALL
+  SELECT 'DEMO | Aguardando coordenação (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito análise da declaração de frequência.'
+  UNION ALL
+  SELECT 'DEMO | Deferido (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito a declaração de matrícula.'
+  UNION ALL
+  SELECT 'DEMO | Indeferido (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito a declaração de frequência.'
+  UNION ALL
+  SELECT 'DEMO | Concluído (Mário)', 'mario.ambrosio',
+         'Mensagem sintética: solicito a declaração de frequência.'
+) AS demo
+JOIN tb_chamados chamado ON chamado.assunto = demo.assunto
+JOIN tb_usuarios aluno ON aluno.login = demo.login;
+
+INSERT INTO tb_mensagens (id_chamado, id_usuario, mensagem, interna)
+SELECT chamado.id_chamado, secretaria.id_usuario,
+       'Mensagem sintética: aguardamos o complemento das informações.',
+       0
+FROM tb_chamados chamado
+JOIN tb_usuarios secretaria ON secretaria.login = 'sofia.martins'
+WHERE chamado.assunto = 'DEMO | Aguardando aluno (Mário)';
+
+INSERT INTO tb_mensagens (id_chamado, id_usuario, mensagem, interna)
+SELECT chamado.id_chamado, secretaria.id_usuario,
+       'Nota interna sintética para a coordenação.',
+       1
+FROM tb_chamados chamado
+JOIN tb_usuarios secretaria ON secretaria.login = 'sofia.martins'
+WHERE chamado.assunto = 'DEMO | Aguardando coordenação (Mário)';
+
+-- Anexos demonstrativos com arquivos correspondentes em uploads/anexos/
+INSERT INTO tb_anexos
+  (id_chamado, id_usuario, nome_original, arquivo, tamanho)
+SELECT chamado.id_chamado, aluno.id_usuario,
+       'Comprovante demonstrativo.pdf', 'demo-comprovante.pdf', 614
+FROM tb_chamados chamado
+JOIN tb_usuarios aluno ON aluno.login = 'mario.ambrosio'
+WHERE chamado.assunto = 'DEMO | Solicitação aberta (Mário)';
+
+INSERT INTO tb_anexos
+  (id_chamado, id_usuario, nome_original, arquivo, tamanho)
+SELECT chamado.id_chamado, aluno.id_usuario,
+       'Formulário demonstrativo.pdf', 'demo-formulario.pdf', 617
+FROM tb_chamados chamado
+JOIN tb_usuarios aluno ON aluno.login = 'mario.ambrosio'
+WHERE chamado.assunto = 'DEMO | Aguardando aluno (Mário)';
+
+-- Histórico inicial dos chamados demonstrativos; não simula auditoria real
+INSERT INTO tb_historico
+  (id_chamado, id_usuario, acao, status_anterior, status_novo, observacao)
+SELECT
+  chamado.id_chamado, NULL, 'Carga de demonstração', NULL, chamado.status,
+  'Registro sintético para revisão; não representa uma ação real.'
+FROM tb_chamados chamado
+WHERE chamado.assunto LIKE 'DEMO | %';
+
+-- Documentos demonstrativos inativos, sem validade de emissão real
+INSERT INTO tb_documentos (codigo, id_aluno, tipo, valido_ate, ativo)
+SELECT
+  UPPER(SUBSTRING(SHA2(CONCAT('documento-demo-', aluno.login), 256), 1, 16)),
+  aluno.id_usuario, 'matricula', DATE_ADD(CURDATE(), INTERVAL 30 DAY), 0
+FROM tb_usuarios aluno
+WHERE aluno.ra LIKE 'DEMO-%';
+
+-- FAQ
+
+INSERT INTO tb_faq
+  (pergunta, resposta, categoria, palavras_chave, id_autor)
+SELECT
+  'Como solicito uma declaração?',
+  'Acesse a área de requerimentos, selecione a declaração desejada e acompanhe o andamento pelo sistema.',
+  'Requerimentos', 'declaração, matrícula, frequência', id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+INSERT INTO tb_faq
+  (pergunta, resposta, categoria, palavras_chave, id_autor)
+SELECT
+  'Como acompanho uma solicitação?',
+  'Acesse seus chamados no sistema para consultar o status e as mensagens da secretaria.',
+  'Requerimentos', 'chamado, solicitação, status, acompanhamento', id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+INSERT INTO tb_faq
+  (pergunta, resposta, categoria, palavras_chave, id_autor)
+SELECT
+  'Como solicito aproveitamento de estudos?',
+  'Abra um requerimento de aproveitamento e anexe os documentos solicitados. A análise depende da documentação e dos procedimentos acadêmicos vigentes.',
+  'Requerimentos', 'aproveitamento, estudos, disciplinas, histórico', id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+INSERT INTO tb_faq
+  (pergunta, resposta, categoria, palavras_chave, id_autor)
+SELECT
+  'Onde consulto prazos e calendário acadêmico?',
+  'Consulte o calendário acadêmico e os comunicados oficiais da unidade. Em caso de dúvida, entre em contato com a secretaria.',
+  'Informações acadêmicas', 'prazo, calendário, secretaria', id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+-- Respostas prontas da secretaria
+
+INSERT INTO tb_respostas (titulo, texto, id_autor)
+SELECT
+  'Solicitação recebida',
+  'Sua solicitação foi recebida pela secretaria. Acompanhe as atualizações e eventuais pedidos de informação pelo sistema.',
+  id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+INSERT INTO tb_respostas (titulo, texto, id_autor)
+SELECT
+  'Documento pendente',
+  'Para dar continuidade à solicitação, envie os documentos indicados na mensagem do chamado.',
+  id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+INSERT INTO tb_respostas (titulo, texto, id_autor)
+SELECT
+  'Consulte o calendário acadêmico',
+  'Os prazos dependem do calendário e dos procedimentos acadêmicos vigentes. Consulte os comunicados oficiais ou procure a secretaria.',
+  id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+-- Aviso geral, sem data de expiração
+INSERT INTO tb_avisos (titulo, texto, publicado, exibir_ate, id_autor)
+SELECT
+  'Consulte os comunicados acadêmicos',
+  'Acompanhe os comunicados oficiais e o calendário acadêmico para verificar prazos, atividades e orientações da unidade.',
+  1, NULL, id_usuario
+FROM tb_usuarios WHERE login = 'sofia.martins';
+
+-- Notificações sintéticas para os dois chamados que aguardam ação
+INSERT INTO tb_notificacoes
+  (id_usuario, id_chamado, canal, mensagem, lida, enviada)
+SELECT aluno.id_usuario, chamado.id_chamado, 'sistema',
+       'Notificação sintética: o chamado demonstrativo aguarda sua resposta.',
+       0, 0
+FROM tb_chamados chamado
+JOIN tb_usuarios aluno ON aluno.login = 'mario.ambrosio'
+WHERE chamado.assunto = 'DEMO | Aguardando aluno (Mário)';
+
+INSERT INTO tb_notificacoes
+  (id_usuario, id_chamado, canal, mensagem, lida, enviada)
+SELECT coordenador.id_usuario, chamado.id_chamado, 'sistema',
+       'Notificação sintética: há um chamado demonstrativo aguardando parecer.',
+       0, 0
+FROM tb_chamados chamado
+JOIN tb_usuarios coordenador
+  ON coordenador.login = 'renata.almeida'
+WHERE chamado.assunto = 'DEMO | Aguardando coordenação (Mário)';
+
+-- Eventos de auditoria fictícios, identificados explicitamente como teste
+INSERT INTO tb_auditoria
+  (id_usuario, acao, tabela, id_registro, detalhes, ip)
+SELECT secretaria.id_usuario, 'teste', 'tb_chamados', chamado.id_chamado,
+       'TESTE: registro sintético; não representa uma ação real.',
+       '127.0.0.1'
+FROM tb_chamados chamado
+JOIN tb_usuarios secretaria ON secretaria.login = 'sofia.martins'
+WHERE chamado.assunto = 'DEMO | Solicitação aberta (Mário)';
+
+INSERT INTO tb_auditoria
+  (id_usuario, acao, tabela, id_registro, detalhes, ip)
+SELECT secretaria.id_usuario, 'teste', 'tb_anexos', anexo.id_anexo,
+       'TESTE: anexo sintético; não representa uma ação real.',
+       '127.0.0.1'
+FROM tb_anexos anexo
+JOIN tb_usuarios secretaria ON secretaria.login = 'sofia.martins'
+WHERE anexo.arquivo = 'demo-comprovante.pdf';

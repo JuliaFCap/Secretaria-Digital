@@ -9,6 +9,8 @@ Projeto de Curricularização da Extensão · 4º semestre de ADS · Identidade 
 ## Requisitos para rodar
 
 - XAMPP (ou outro servidor com Apache + PHP 8 + MySQL/MariaDB)
+- Extensões PHP: `mysqli` para o banco e `fileinfo` para validar os arquivos enviados; confirme que estão habilitadas no `php.ini`.
+- `curl` é necessária apenas para a integração opcional com a Evolution API/WhatsApp.
 - Nenhuma internet é necessária: Bootstrap, fontes e o gerador de QR Code estão dentro do projeto.
 
 ## Instalação
@@ -16,23 +18,22 @@ Projeto de Curricularização da Extensão · 4º semestre de ADS · Identidade 
 1. Copie a pasta `secretaria-digital` para `C:\xampp\htdocs\`.
 2. No painel do XAMPP, inicie o **Apache** e o **MySQL**.
 3. Abra `http://localhost/phpmyadmin`, vá na aba **SQL**, cole o conteúdo de `banco.sql` e clique em **Executar**.
-   O script cria o banco `secretaria_digital`, as 19 tabelas e o usuário do primeiro acesso.
+   O script cria o banco `secretaria_digital`, as 19 tabelas e os dados demonstrativos, mas não cria uma conta administrativa.
 4. Se o seu MySQL tiver senha no usuário `root`, ajuste a variável `$senha` em `conecta.php`.
 5. Acesse `http://localhost/secretaria-digital/`.
+6. Na primeira visita, o sistema abrirá a configuração do administrador. Informe nome, login no padrão `primeiro.sobrenome` e uma senha. O e-mail será criado como `login@secretariadigital.local`.
 
 > O script apaga e recria o banco `secretaria_digital`. Rode só na instalação.
 
-## Credencial para primeiro acesso
+## Primeiro acesso e senhas
 
-| Usuário | Senha | Nível |
-| --- | --- | --- |
-| `admin` | `Fatec@2026` | Administração |
+Não há credencial padrão no banco. A tela de configuração só permite criar o primeiro administrador e fica indisponível assim que essa conta existe. As senhas definidas pelo sistema são armazenadas com `password_hash()` e verificadas com `password_verify()`. Hashes SHA-256 antigos são aceitos durante a migração e atualizados automaticamente após um login válido.
 
-Troque a senha no primeiro acesso (menu com o seu nome → **Trocar senha**).
+Para atualizar uma instalação existente, execute o arquivo de migração `migrar_senhas.sql` no banco `secretaria_digital` antes de substituir os arquivos do sistema. O nome do banco permanece `secretaria_digital`; o script apenas amplia a coluna de senha para comportar os hashes modernos. A credencial administrativa já existente permanece válida e seu hash será atualizado no próximo login.
 
 ## Primeiros passos depois de instalar
 
-Todo dado entra no sistema pelas telas de cadastro. Logado como **admin**:
+Todo dado entra no sistema pelas telas de cadastro. Logado com a conta de administrador criada no primeiro acesso:
 
 1. **Cadastros → Cursos:** cadastre os cursos (ex.: ADS, Gestão Empresarial).
 2. **Cadastros → Tipos de requerimento:** cadastre os tipos, o prazo de cada um, se precisa de parecer da coordenação e se exige anexo.
@@ -59,10 +60,10 @@ Cada página confere o nível do usuário no PHP (`verifica_nivel()` em `funcoes
 | Framework CSS | Bootstrap 5 (`css/bootstrap.min.css`) + `css/estilo.css` |
 | Página inicial `index.php` | Login, mural de avisos e FAQ |
 | Cabeçalho e rodapé idênticos | `cabecalho.php` e `rodape.php` incluídos em todas as páginas |
-| Todo dado entra via cadastro | Telas `*_add.php` / `*_alt.php`; o script só cria o primeiro admin |
+| Cadastros reais | Telas `*_add.php` / `*_alt.php`; o banco inclui dados demonstrativos inativos e o primeiro admin é criado na configuração inicial |
 | Relatórios ordenáveis | `relatorios.php` (6 relatórios, incluindo estágios) e todas as listas: clique no título da coluna |
-| Gerenciamento de imagens (CRUD, upload, remoção) | Mural de avisos: `aviso_*.php`, pasta `uploads/avisos/` (e modelos de documentos do estágio) |
-| SHA-256 com salt baseado no login | `gera_hash()` em `funcoes.php`: `hash('sha256', $login . $senha)` |
+| Gerenciamento de imagens (CRUD, upload, remoção) | Mural de avisos: `aviso_*.php`, pasta `uploads/avisos/` e modelos de documentos do estágio |
+| Senhas protegidas | `password_hash()`/`password_verify()` em `funcoes.php`, com migração automática de hashes SHA-256 antigos |
 | Prepared statements | Todas as consultas com dados do usuário usam `mysqli_stmt_*` |
 | Prevenção de XSS e sanitização | `seguro()` (htmlspecialchars) em toda saída; `limpa()` e `(int)` na entrada |
 | Pelo menos 3 níveis | 4 níveis: aluno, secretaria, coordenação, administração |
@@ -75,6 +76,8 @@ O padrão de nomes segue o das aulas: `entidade_acao.php`.
 | --- | --- |
 | `conecta.php` | Conexão com o banco |
 | `funcoes.php` | Funções do sistema (segurança, sessão, histórico, upload, ordenação) |
+| `setup_admin.php` | Configuração protegida da primeira conta administrativa |
+| `migrar_senhas.sql` | Atualização do tamanho da coluna de senha em bancos existentes |
 | `cabecalho.php`, `rodape.php` | Cabeçalho e rodapé de todas as páginas |
 | `index.php`, `login.php`, `logout.php`, `painel.php` | Entrada no sistema |
 | `*_lista.php` | Listagem com ordenação |

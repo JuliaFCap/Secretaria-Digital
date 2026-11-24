@@ -5,6 +5,8 @@ uploads/avisos/*
 uploads/anexos/*
 !uploads/anexos/.htaccess
 !uploads/anexos/.gitkeep
+!uploads/anexos/comprovante.pdf
+!uploads/anexos/formulario.pdf
 uploads/modelos/*
 !uploads/modelos/.htaccess
 !uploads/modelos/.gitkeep

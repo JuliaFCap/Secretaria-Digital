@@ -37,25 +37,43 @@
         header("location: usuario_alt.php?id=$id");
         exit;
     }
+    if(!mysqli_begin_transaction($con)){
+        $_SESSION['erro'] = "Não foi possível iniciar a alteração.";
+        header("location: usuario_alt.php?id=$id");
+        exit;
+    }
     $sql = "UPDATE tb_usuarios
             SET nome = ?, login = ?, email = ?, nivel = ?, id_curso = ?, ra = ?,
                 semestre = ?, telefone = ?, aviso_whatsapp = ?, ativo = ?
             WHERE id_usuario = ?";
     $stmt = mysqli_stmt_init($con);
-    mysqli_stmt_prepare($stmt, $sql);
-    mysqli_stmt_bind_param($stmt, "ssssisisiii", $nome, $login, $email, $nivel, $curso_banco, $ra_banco, $semestre_banco, $telefone, $whats, $ativo, $id);
-    if(!mysqli_stmt_execute($stmt)){
+    if(!mysqli_stmt_prepare($stmt, $sql) ||
+       !mysqli_stmt_bind_param($stmt, "ssssisisiii", $nome, $login, $email, $nivel, $curso_banco, $ra_banco, $semestre_banco, $telefone, $whats, $ativo, $id) ||
+       !mysqli_stmt_execute($stmt)){
+        mysqli_rollback($con);
         $_SESSION['erro'] = "Não foi possível salvar. Login, e-mail ou RA já estão em uso.";
         header("location: usuario_alt.php?id=$id");
         exit;
     }
     if($senha_nova != ""){
-        $hash = gera_hash($login, $senha_nova);
+        $hash = gera_hash($senha_nova);
         $sql = "UPDATE tb_usuarios SET senha = ? WHERE id_usuario = ?";
         $stmt = mysqli_stmt_init($con);
-        mysqli_stmt_prepare($stmt, $sql);
-        mysqli_stmt_bind_param($stmt, "si", $hash, $id);
-        mysqli_stmt_execute($stmt);
+        if(!mysqli_stmt_prepare($stmt, $sql) ||
+           !mysqli_stmt_bind_param($stmt, "si", $hash, $id) ||
+           !mysqli_stmt_execute($stmt) ||
+           mysqli_stmt_affected_rows($stmt) != 1){
+            mysqli_rollback($con);
+            $_SESSION['erro'] = "Não foi possível salvar a nova senha.";
+            header("location: usuario_alt.php?id=$id");
+            exit;
+        }
+    }
+    if(!mysqli_commit($con)){
+        mysqli_rollback($con);
+        $_SESSION['erro'] = "Não foi possível concluir a alteração.";
+        header("location: usuario_alt.php?id=$id");
+        exit;
     }
     if($id == $_SESSION['id_usuario']){
         $_SESSION['nome'] = $nome;

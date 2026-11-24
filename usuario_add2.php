@@ -12,7 +12,7 @@
         header("location: usuario_add.php");
         exit;
     }
-    $hash = gera_hash($login, $senha_nova);//SHA-256 com salt baseado no login
+    $hash = gera_hash($senha_nova);
     $sql = "INSERT INTO tb_usuarios
             (nome, login, senha, email, nivel, id_curso, ra, semestre, telefone, aviso_whatsapp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

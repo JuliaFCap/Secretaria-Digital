@@ -2,6 +2,10 @@
     session_start();
     require_once("conecta.php");
     require_once("funcoes.php");
+    if(!existe_administrador($con)){
+        header("location: setup_admin.php");
+        exit;
+    }
     // usuário já logado vai direto para o painel
     if(isset($_SESSION['id_usuario'])){
         header("location: painel.php");

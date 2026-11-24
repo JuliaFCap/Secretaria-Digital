@@ -29,17 +29,25 @@
     </div>
     <div class="col-md-6">
         <label for="txtlogin" class="form-label">Login</label>
-        <input type="text" class="form-control" id="txtlogin" name="txtlogin" required maxlength="50" pattern="[a-zA-Z0-9._-]+" value="<?php echo seguro($usuario['login'] ?? ""); ?>">
-        <div class="form-text">Letras, números, ponto, hífen ou sublinhado. Ao trocar o login, defina uma nova senha.</div>
+        <input type="text" class="form-control" id="txtlogin" name="txtlogin" required maxlength="50" pattern="[a-z]+\.[a-z]+" value="<?php echo seguro($usuario['login'] ?? ""); ?>">
+        <div class="form-text">Use primeiro.sobrenome em letras minúsculas. Ao trocar o login, defina uma nova senha.</div>
     </div>
     <div class="col-md-6">
         <label for="txtsenha" class="form-label"><?php echo $editando ? "Nova senha (deixe em branco para manter)" : "Senha inicial"; ?></label>
-        <input type="password" class="form-control" id="txtsenha" name="txtsenha" minlength="6" <?php echo $editando ? "" : "required"; ?> autocomplete="new-password">
+        <input type="password" class="form-control" id="txtsenha" name="txtsenha" minlength="6" maxlength="72" <?php echo $editando ? "" : "required"; ?> autocomplete="new-password">
     </div>
     <div class="col-md-6">
         <label for="txtemail" class="form-label">E-mail</label>
-        <input type="email" class="form-control" id="txtemail" name="txtemail" required maxlength="120" value="<?php echo seguro($usuario['email'] ?? ""); ?>">
+        <input type="email" class="form-control" id="txtemail" readonly maxlength="120" value="<?php echo seguro($usuario['email'] ?? ""); ?>">
+        <div class="form-text">Gerado automaticamente como login@secretariadigital.local.</div>
     </div>
+    <script>
+        const campoLogin = document.getElementById("txtlogin");
+        const campoEmail = document.getElementById("txtemail");
+        const atualizarEmail = () => campoEmail.value = campoLogin.value.toLowerCase() + "@secretariadigital.local";
+        campoLogin.addEventListener("input", atualizarEmail);
+        atualizarEmail();
+    </script>
     <div class="col-md-6">
         <label for="txttelefone" class="form-label">Celular / WhatsApp</label>
         <input type="text" class="form-control" id="txttelefone" name="txttelefone" maxlength="20" value="<?php echo seguro($usuario['telefone'] ?? ""); ?>" placeholder="(16) 99999-9999">

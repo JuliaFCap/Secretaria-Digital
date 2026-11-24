@@ -14,9 +14,32 @@
         return trim(strip_tags((string)$texto));
     }
 
-    // Hash da senha: SHA-256 com salt baseado no login
-    function gera_hash($login, $senha){
-        return hash("sha256", $login . $senha);
+    // Hash de senha no formato seguro do PHP
+    function gera_hash($senha){
+        $hash = password_hash($senha, PASSWORD_DEFAULT);
+        if($hash === false){
+            throw new RuntimeException("Não foi possível proteger a senha.");
+        }
+        return $hash;
+    }
+
+    function senha_legada($hash){
+        return preg_match("/^[a-f0-9]{64}$/", $hash) === 1;
+    }
+
+    function verifica_senha($login, $senha, $hash){
+        if(password_verify($senha, $hash)){
+            return true;
+        }
+        return senha_legada($hash) && hash_equals($hash, hash("sha256", $login . $senha));
+    }
+
+    function existe_administrador($con){
+        $res = mysqli_query($con, "SELECT id_usuario FROM tb_usuarios WHERE nivel = 'admin' LIMIT 1");
+        if($res === false){
+            die("Não foi possível verificar a configuração do sistema.");
+        }
+        return mysqli_num_rows($res) > 0;
     }
 
     // Exige usuário logado. Se não estiver, volta para a página inicial

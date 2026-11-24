@@ -4,10 +4,16 @@
     if(!function_exists("limpa") || !isset($_POST['txtnome'])){
         die("Acesso inválido");
     }
-    $nome = limpa($_POST['txtnome']);
-    $login = strtolower(limpa($_POST['txtlogin'] ?? ""));
+    $nome = $_POST['txtnome'] ?? "";
+    $nome = is_string($nome) ? limpa($nome) : "";
+    $login = $_POST['txtlogin'] ?? "";
+    $login = is_string($login) ? strtolower(limpa($login)) : "";
     $senha_nova = $_POST['txtsenha'] ?? "";
-    $email = limpa($_POST['txtemail'] ?? "");
+    $senha_valida = is_string($senha_nova);
+    if(!$senha_valida){
+        $senha_nova = "";
+    }
+    $email = $login . "@secretariadigital.local";
     $telefone = limpa($_POST['txttelefone'] ?? "");
     $curso = (int)($_POST['selcurso'] ?? 0);
     $ra = limpa($_POST['txtra'] ?? "");
@@ -21,11 +27,14 @@
         $nivel = "aluno";
     }
     $erro = "";
-    if($nome == "" || $login == "" || $email == ""){
+    if(!$senha_valida){
+        $erro = "Senha inválida.";
+    }
+    else if($nome == "" || $login == "" || $email == ""){
         $erro = "Preencha nome, login e e-mail.";
     }
-    else if(!preg_match("/^[a-z0-9._-]+$/", $login)){
-        $erro = "O login só pode ter letras, números, ponto, hífen ou sublinhado.";
+    else if(!preg_match("/^[a-z]+\.[a-z]+$/", $login)){
+        $erro = "Use o padrão primeiro.sobrenome no login, somente com letras minúsculas.";
     }
     else if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
         $erro = "E-mail inválido.";
@@ -41,6 +50,9 @@
     }
     else if($senha_nova != "" && strlen($senha_nova) < 6){
         $erro = "A senha precisa ter pelo menos 6 caracteres.";
+    }
+    else if(strlen($senha_nova) > 72){
+        $erro = "A senha pode ter no máximo 72 bytes.";
     }
     // campos que não se aplicam ao nível ficam nulos no banco
     $curso_banco = ($curso > 0 && ($nivel == "aluno" || $nivel == "coordenacao")) ? $curso : null;
