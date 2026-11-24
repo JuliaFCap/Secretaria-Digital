@@ -386,15 +386,22 @@ INSERT INTO tb_cursos (nome, sigla) VALUES
   ('Gestão da Produção Industrial', 'GPI'),
   ('Segurança da Informação', 'SI');
 
--- Conta de aluno vinculada ao curso ADS
-INSERT INTO tb_usuarios (nome, login, senha, email, nivel, id_curso)
+-- Cadastro fictício de aluno ADS; telefone propositalmente inválido.
+INSERT INTO tb_usuarios
+  (nome, login, senha, email, nivel, id_curso, ra, semestre, telefone,
+   aviso_whatsapp, ativo)
 SELECT
   'Mário Ambrósio',
   'mario.ambrosio',
   '24a1d4d64b9b7f18e177ce6dce143697a23c52213f40041cea2d298f18bc8828',
   'mario.ambrosio@secretariadigital.local',
   'aluno',
-  id_curso
+  id_curso,
+  'DEMO-ADS-001',
+  3,
+  '(00) 00000-0000',
+  0,
+  1
 FROM tb_cursos
 WHERE sigla = 'ADS';
 
@@ -439,13 +446,15 @@ FROM (
 ) AS dados;
 
 INSERT INTO tb_usuarios
-  (nome, login, senha, email, nivel, id_curso, ra, semestre, ativo)
+  (nome, login, senha, email, nivel, id_curso, ra, semestre, telefone,
+   aviso_whatsapp, ativo)
 SELECT
   dados.nome,
   dados.login,
   SHA2(CONCAT(dados.login, UUID()), 256),
   CONCAT(dados.login, '@secretariadigital.local'),
-  'aluno', dados.id_curso, CONCAT('DEMO-', dados.sigla), 1, 0
+  'aluno', dados.id_curso, CONCAT('DEMO-', dados.sigla), 1,
+  '(00) 00000-0000', 0, 0
 FROM (
   SELECT
     c.id_curso,

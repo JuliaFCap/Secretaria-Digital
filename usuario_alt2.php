@@ -55,6 +55,12 @@
         header("location: usuario_alt.php?id=$id");
         exit;
     }
+    if(mysqli_stmt_affected_rows($stmt) != 1){
+        mysqli_rollback($con);
+        $_SESSION['erro'] = "Nenhum dado foi alterado. Confira se os valores informados são diferentes dos atuais.";
+        header("location: usuario_alt.php?id=$id");
+        exit;
+    }
     if($senha_nova != ""){
         $hash = gera_hash($senha_nova);
         $sql = "UPDATE tb_usuarios SET senha = ? WHERE id_usuario = ?";
@@ -82,4 +88,5 @@
     registra_auditoria($con, "alteracao", "tb_usuarios", $id, "Usuário $login" . ($senha_nova != "" ? " (senha redefinida)" : ""));
     $_SESSION['msg'] = "Usuário $id alterado com sucesso!";
     header("location: usuario_lista.php");
+    exit;
 ?>
